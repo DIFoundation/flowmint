@@ -1,7 +1,7 @@
 {
-  "name": "hardhat",
+  "name": "contracts",
   "version": "1.0.0",
-  "description": "Smart contracts for my-celo-app",
+  "description": "FlowMint smart contracts for Celo",
   "main": "index.js",
   "scripts": {
     "build": "hardhat compile",

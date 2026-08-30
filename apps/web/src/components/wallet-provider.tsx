@@ -18,7 +18,7 @@ const connectors = connectorsForWallets(
   ],
   {
     appName: "my-celo-app",
-    projectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID!,
+    projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!,
   }
 );
 

@@ -1,7 +1,7 @@
 {
-  "name": "my-celo-app",
+  "name": "flowmint",
   "version": "0.1.0",
-  "description": "A new Celo blockchain project",
+  "description": "Agent-powered stablecoin payments for everyday users on Celo",
   "private": true,
   "scripts": {
     "build": "turbo build",

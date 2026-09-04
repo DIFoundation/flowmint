@@ -11,7 +11,7 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import { ConnectButton } from "@/components/connect-button"
+import { ConnectButton as WalletConnectButton } from "@/components/connect-button"
 
 const navLinks = [
   { name: "Home", href: "/" },

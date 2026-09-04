@@ -98,3 +98,5 @@ Thumbs.db
 
 # Turbo
 .turbo
+apps/agent/.env
+apps/agent/.env

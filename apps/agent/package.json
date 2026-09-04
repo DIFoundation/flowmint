@@ -1,0 +1,21 @@
+{
+  "name": "@flowmint/agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FlowMint economic agent",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@flowmint/celo": "workspace:^",
+    "dotenv": "^17.4.2",
+    "viem": "2.56.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.2.2"
+  }
+}

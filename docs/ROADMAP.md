@@ -17,18 +17,18 @@
 **Objective:** Lock the exact real-world economic workflow before feature expansion.
 
 **Tasks**
-- [ ] Define primary user.
-- [ ] Define primary economic problem.
-- [ ] Define economic event/payment.
-- [ ] Define sender, recipient and independence.
-- [ ] Document current manual workflow.
-- [ ] Define agent responsibility.
-- [ ] Define forbidden agent actions.
-- [ ] Define minimum verification.
-- [ ] Define authorization model.
-- [ ] Define successful real-world outcome.
-- [ ] Define first distribution/acquisition path.
-- [ ] Write canonical user journey.
+- [x] Define primary user.
+- [x] Define primary economic problem.
+- [x] Define economic event/payment.
+- [x] Define sender, recipient and independence.
+- [x] Document current manual workflow.
+- [x] Define agent responsibility.
+- [x] Define forbidden agent actions.
+- [x] Define minimum verification.
+- [x] Define authorization model.
+- [x] Define successful real-world outcome.
+- [x] Define first distribution/acquisition path.
+- [x] Write canonical user journey.
 
 **Do not build:** multiple use cases, generic agent marketplace, tokenomics, artificial volume, advanced orchestration.
 

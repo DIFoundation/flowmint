@@ -43,6 +43,20 @@ export interface ServiceQuote {
   expiresAt?: number;
 }
 
+export interface ServiceScore {
+  service: Service;
+  score: number;
+  eligible: boolean;
+  reasons: string[];
+}
+
+export interface ServiceDecision {
+  selectedServiceId?: string;
+  selectedScore?: number;
+  reasons: string[];
+  candidates: ServiceScore[];
+}
+
 export interface Payment {
   token: `0x${string}`;
   amount: bigint;
@@ -72,6 +86,7 @@ export interface Flow {
 
   selectedService?: Service;
   quote?: ServiceQuote;
+  decision: ServiceDecision;
   payment?: Payment;
   settlement?: Settlement;
   outcome?: FlowOutcome;

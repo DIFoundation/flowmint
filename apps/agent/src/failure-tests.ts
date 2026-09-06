@@ -104,8 +104,7 @@ const service: Service = {
   const badCurrencyService = {
     ...service,
     pricing: {
-      currency:
-        "0x2222222222222222222222222222222222222222" as `0x${string}`,
+      currency: "0x2222222222222222222222222222222222222222" as `0x${string}`,
       amount: 1_000_000n,
     },
   };
@@ -134,8 +133,7 @@ const service: Service = {
   });
 
   const result = agent.authorize(flow, {
-    payer:
-      "0x2222222222222222222222222222222222222222",
+    payer: "0x2222222222222222222222222222222222222222",
   });
 
   if (result.status !== "failed") {
@@ -160,6 +158,112 @@ const service: Service = {
   }
 
   console.log("✅ Invalid submission state rejected");
+}
+
+// 7. Capability mismatch
+{
+  const wrongCapabilityService: Service = {
+    ...service,
+    capabilities: ["design"],
+  };
+
+  const agent = createAgent(wrongCapabilityService);
+
+  const flow = agent.createFlow({
+    description: "Find a development service.",
+    constraints: {
+      capability: "development",
+    },
+  });
+
+  const result = agent.evaluate(flow);
+
+  if (result.status !== "failed") {
+    throw new Error("Expected capability mismatch to fail.");
+  }
+
+  if (
+    !result.decision?.candidates[0]?.reasons.some((reason) =>
+      reason.includes('Missing required capability "development"'),
+    )
+  ) {
+    throw new Error("Expected capability mismatch reason.");
+  }
+
+  console.log("✅ Capability mismatch rejected");
+}
+
+// 8. Inactive provider
+{
+  const inactiveService: Service = {
+    ...service,
+    active: false,
+  };
+
+  const agent = createAgent(inactiveService);
+
+  const flow = agent.createFlow({
+    description: "Use an inactive provider.",
+  });
+
+  const result = agent.evaluate(flow);
+
+  if (result.status !== "failed") {
+    throw new Error("Expected inactive provider to fail.");
+  }
+
+  console.log("✅ Inactive provider rejected");
+}
+
+// 9. Ranking chooses eligible lower-cost provider
+{
+  const registry = new ServiceRegistry();
+
+  const expensive = {
+    ...service,
+    id: "expensive-service",
+    pricing: {
+      currency: USDC,
+      amount: 4_000_000n,
+    },
+  };
+
+  const affordable = {
+    ...service,
+    id: "affordable-service",
+    pricing: {
+      currency: USDC,
+      amount: 2_000_000n,
+    },
+  };
+
+  registry.register(expensive);
+  registry.register(affordable);
+
+  const agent = new FlowMintAgent({
+    registry,
+    paymentPolicy: {
+      maxPayment: 10_000_000n,
+      allowedCurrencies: [USDC],
+    },
+  });
+
+  const flow = agent.createFlow({
+    description: "Choose an affordable service.",
+    maxBudget: 3_000_000n,
+  });
+
+  const result = agent.evaluate(flow);
+
+  if (result.status !== "awaiting_authorization") {
+    throw new Error("Expected an eligible service to be selected.");
+  }
+
+  if (result.selectedService?.id !== "affordable-service") {
+    throw new Error("Decision engine selected the wrong provider.");
+  }
+
+  console.log("✅ Decision engine selected eligible provider");
 }
 
 console.log("\n🔥 ALL FAILURE-PATH TESTS PASSED");

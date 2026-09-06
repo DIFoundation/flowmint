@@ -6,36 +6,36 @@ Only advance when the current milestone's exit criteria in `ROADMAP.md` are sati
 
 ## M1
 ### Product definition
-- [ ] Define primary user.
-- [ ] Define primary economic problem.
-- [ ] Define exact economic event.
-- [ ] Define sender/recipient and independence.
-- [ ] Define current manual workflow.
-- [ ] Define FlowMint workflow.
-- [ ] Define agent responsibility.
-- [ ] Define human responsibility.
-- [ ] Define forbidden agent actions.
-- [ ] Define minimum verification.
-- [ ] Define authorization model.
-- [ ] Define successful real-world outcome.
-- [ ] Define first distribution path.
+- [x] Define primary user.
+- [x] Define primary economic problem.
+- [x] Define exact economic event.
+- [x] Define sender/recipient and independence.
+- [x] Define current manual workflow.
+- [x] Define FlowMint workflow.
+- [x] Define agent responsibility.
+- [x] Define human responsibility.
+- [x] Define forbidden agent actions.
+- [x] Define minimum verification.
+- [x] Define authorization model.
+- [x] Define successful real-world outcome.
+- [x] Define first distribution path.
 
 ### Flow
-- [ ] Happy path.
-- [ ] Insufficient funds.
-- [ ] Invalid recipient.
-- [ ] Authorization rejected.
-- [ ] Agent refusal.
-- [ ] Transaction failure.
-- [ ] Canonical user journey.
+- [x] Happy path.
+- [x] Insufficient funds.
+- [x] Invalid recipient.
+- [x] Authorization rejected.
+- [x] Agent refusal.
+- [x] Transaction failure.
+- [x] Canonical user journey.
 
 ### Exit review
-- [ ] One-paragraph product explanation.
-- [ ] Unambiguous user journey.
-- [ ] Unambiguous agent role.
-- [ ] Unambiguous payment role.
-- [ ] No generic-agent drift.
-- [ ] M1 exit criteria satisfied.
+- [x] One-paragraph product explanation.
+- [x] Unambiguous user journey.
+- [x] Unambiguous agent role.
+- [x] Unambiguous payment role.
+- [x] No generic-agent drift.
+- [x] M1 exit criteria satisfied.
 
 ```
 Network:        Celo Mainnet

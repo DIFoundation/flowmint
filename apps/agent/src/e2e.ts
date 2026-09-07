@@ -95,6 +95,10 @@ if (
 
 const authorized = agent.authorize(evaluated, {
   payer: "0x2222222222222222222222222222222222222222",
+  authorizedAmount: 2_000_000n,
+  authorizedToken: USDC,
+  authorizedRecipient: "0x1111111111111111111111111111111111111111",
+  authorizedAt: Date.now(),
 });
 
 console.log("6. Authorized:", authorized.status);

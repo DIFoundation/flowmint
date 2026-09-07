@@ -57,6 +57,14 @@ export interface ServiceDecision {
   candidates: ServiceScore[];
 }
 
+export interface PaymentAuthorization {
+  payer: `0x${string}`;
+  authorizedAmount: bigint;
+  authorizedToken: `0x${string}`;
+  authorizedRecipient: `0x${string}`;
+  authorizedAt: number;
+}
+
 export interface Payment {
   token: `0x${string}`;
   amount: bigint;
@@ -87,6 +95,9 @@ export interface Flow {
   selectedService?: Service;
   quote?: ServiceQuote;
   decision: ServiceDecision;
+
+  authorization?: PaymentAuthorization;
+
   payment?: Payment;
   settlement?: Settlement;
   outcome?: FlowOutcome;

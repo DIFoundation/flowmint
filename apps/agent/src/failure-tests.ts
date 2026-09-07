@@ -134,6 +134,10 @@ const service: Service = {
 
   const result = agent.authorize(flow, {
     payer: "0x2222222222222222222222222222222222222222",
+    authorizedAmount: 1_000_000n,
+    authorizedToken: USDC,
+    authorizedRecipient: PROVIDER,
+    authorizedAt: Date.now(),
   });
 
   if (result.status !== "failed") {
@@ -264,6 +268,199 @@ const service: Service = {
   }
 
   console.log("✅ Decision engine selected eligible provider");
+}
+
+// 10. Exact authorization binding
+{
+  const agent = createAgent(service);
+
+  const flow = agent.createFlow({
+    description: "Authorize exact payment.",
+  });
+
+  const evaluated = agent.evaluate(flow);
+
+  if (evaluated.status !== "awaiting_authorization") {
+    throw new Error("Expected flow to await authorization.");
+  }
+
+  const result = agent.authorize(evaluated, {
+    payer: "0x2222222222222222222222222222222222222222",
+    authorizedAmount: 1_000_000n,
+    authorizedToken: USDC,
+    authorizedRecipient: PROVIDER,
+    authorizedAt: Date.now(),
+  });
+
+  if (result.status !== "payment_pending") {
+    throw new Error("Expected authorization to succeed.");
+  }
+
+  console.log("✅ Exact authorization binding accepted");
+}
+
+// 11. Amount tampering
+{
+  const agent = createAgent(service);
+
+  const flow = agent.createFlow({
+    description: "Prevent amount tampering.",
+  });
+
+  const evaluated = agent.evaluate(flow);
+
+  const authorized = agent.authorize(evaluated, {
+    payer: "0x2222222222222222222222222222222222222222",
+    authorizedAmount: 1_000_000n,
+    authorizedToken: USDC,
+    authorizedRecipient: PROVIDER,
+    authorizedAt: Date.now(),
+  });
+
+  if (authorized.status !== "payment_pending") {
+    throw new Error("Expected authorization to succeed.");
+  }
+
+  if (!authorized.payment) {
+    throw new Error("Expected payment to exist.");
+  }
+
+  authorized.payment.amount = 2_000_000n;
+
+  const result = agent.submitPayment(authorized);
+
+  if (result.status !== "failed") {
+    throw new Error("Expected amount tampering to fail.");
+  }
+
+  if (!result.outcome?.error?.toLowerCase().includes("amount")) {
+    throw new Error("Expected amount binding failure reason.");
+  }
+
+  console.log("✅ Amount tampering rejected");
+}
+
+// 12. Token tampering
+{
+  const agent = createAgent(service);
+
+  const flow = agent.createFlow({
+    description: "Prevent token tampering.",
+  });
+
+  agent.evaluate(flow);
+
+  const authorized = agent.authorize(flow, {
+    payer: "0x2222222222222222222222222222222222222222",
+    authorizedAmount: 1_000_000n,
+    authorizedToken: USDC,
+    authorizedRecipient: PROVIDER,
+    authorizedAt: Date.now(),
+  });
+
+  if (authorized.status !== "payment_pending") {
+    throw new Error("Expected authorization to succeed.");
+  }
+
+  if (!flow.payment) {
+    throw new Error("Expected payment to exist.");
+  }
+
+  flow.payment.token = "0x3333333333333333333333333333333333333332";
+
+  const result = agent.submitPayment(flow);
+
+  if (result.status !== "failed") {
+    throw new Error("Expected token tampering to fail.");
+  }
+
+  if (!result.outcome?.error?.toLowerCase().includes("token")) {
+    throw new Error("Expected token binding failure reason.");
+  }
+
+  console.log("✅ Token tampering rejected");
+}
+
+// 13. Recipient tampering
+{
+  const agent = createAgent(service);
+
+  const flow = agent.createFlow({
+    description: "Prevent recipient tampering.",
+  });
+
+  agent.evaluate(flow);
+
+  const authorized = agent.authorize(flow, {
+    payer: "0x2222222222222222222222222222222222222222",
+    authorizedAmount: 1_000_000n,
+    authorizedToken: USDC,
+    authorizedRecipient: PROVIDER,
+    authorizedAt: Date.now(),
+  });
+
+  if (authorized.status !== "payment_pending") {
+    throw new Error("Expected authorization to succeed.");
+  }
+
+  if (!flow.payment) {
+    throw new Error("Expected payment to exist.");
+  }
+
+  flow.payment.recipient = "0x3333333333333333333333333333333333333333";
+
+  const result = agent.submitPayment(flow);
+
+  if (result.status !== "failed") {
+    throw new Error("Expected recipient tampering to fail.");
+  }
+
+  if (!result.outcome?.error?.toLowerCase().includes("recipient")) {
+    throw new Error("Expected recipient binding failure reason.");
+  }
+
+  console.log("✅ Recipient tampering rejected");
+}
+
+// 14. Payer tampering
+{
+  const agent = createAgent(service);
+
+  const flow = agent.createFlow({
+    description: "Prevent payer tampering.",
+  });
+
+  agent.evaluate(flow);
+
+  const authorized = agent.authorize(flow, {
+    payer: "0x2222222222222222222222222222222222222222",
+    authorizedAmount: 1_000_000n,
+    authorizedToken: USDC,
+    authorizedRecipient: PROVIDER,
+    authorizedAt: Date.now(),
+  });
+
+  if (authorized.status !== "payment_pending") {
+    throw new Error("Expected authorization to succeed.");
+  }
+
+  if (!flow.payment) {
+    throw new Error("Expected payment to exist.");
+  }
+
+  flow.payment.payer = "0x3333333333333333333333333333333333333333";
+
+  const result = agent.submitPayment(flow);
+
+  if (result.status !== "failed") {
+    throw new Error("Expected payer tampering to fail.");
+  }
+
+  if (!result.outcome?.error?.toLowerCase().includes("payer")) {
+    throw new Error("Expected payer binding failure reason.");
+  }
+
+  console.log("✅ Payer tampering rejected");
 }
 
 console.log("\n🔥 ALL FAILURE-PATH TESTS PASSED");

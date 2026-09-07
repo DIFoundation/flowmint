@@ -1,18 +1,11 @@
-import type { Flow, FlowIntent, Service, ServiceQuote } from "./types";
+import type { Flow, FlowIntent, PaymentAuthorization, Service, ServiceQuote } from "./types";
 import { ServiceRegistry } from "../services/service-registry";
-import {
-  validatePayment,
-  type PaymentPolicy,
-} from "../policies/payment-policy";
+import { validatePayment, type PaymentPolicy } from "../policies/payment-policy";
 import { rankServices } from "./decision-engine";
 
 export interface FlowMintAgentConfig {
   registry: ServiceRegistry;
   paymentPolicy: PaymentPolicy;
-}
-
-export interface PaymentAuthorization {
-  payer: `0x${string}`;
 }
 
 export class FlowMintAgent {
@@ -105,19 +98,49 @@ export class FlowMintAgent {
     if (flow.status !== "awaiting_authorization") {
       return this.fail(
         flow,
-        "Flow cannot be authorized from its current state.",
+        `Flow ${flow.id} is not awaiting authorization.`,
       );
     }
 
     if (!flow.quote || !flow.selectedService) {
-      return this.fail(flow, "Flow is missing service or quote information.");
+      return this.fail(
+        flow,
+        "Cannot authorize a flow without a selected service and quote.",
+      );
     }
 
+    if (authorization.authorizedAmount !== flow.quote.amount) {
+      return this.fail(
+        flow,
+        "Authorized amount does not match the service quote.",
+      );
+    }
+
+    if (authorization.authorizedToken !== flow.quote.currency) {
+      return this.fail(
+        flow,
+        "Authorized token does not match the service quote currency.",
+      );
+    }
+
+    if (authorization.authorizedRecipient !== flow.quote.provider) {
+      return this.fail(
+        flow,
+        "Authorized recipient does not match the service provider.",
+      );
+    }
+
+    if (authorization.authorizedAt <= 0) {
+      return this.fail(flow, "Authorization timestamp must be valid.");
+    }
+
+    flow.authorization = authorization;
+
     flow.payment = {
-      token: flow.quote.currency,
-      amount: flow.quote.amount,
+      token: authorization.authorizedToken,
+      amount: authorization.authorizedAmount,
       payer: authorization.payer,
-      recipient: flow.quote.provider,
+      recipient: authorization.authorizedRecipient,
       status: "authorized",
     };
 
@@ -141,6 +164,35 @@ export class FlowMintAgent {
     flow.updatedAt = Date.now();
   }
 
+  private validateAuthorizationBinding(flow: Flow): void {
+    if (!flow.authorization) {
+      throw new Error("Payment authorization is missing.");
+    }
+
+    if (!flow.payment) {
+      throw new Error("Payment is missing.");
+    }
+
+    const authorization = flow.authorization;
+    const payment = flow.payment;
+
+    if (payment.payer !== authorization.payer) {
+      throw new Error("Payment payer does not match authorization.");
+    }
+
+    if (payment.amount !== authorization.authorizedAmount) {
+      throw new Error("Payment amount does not match authorization.");
+    }
+
+    if (payment.token !== authorization.authorizedToken) {
+      throw new Error("Payment token does not match authorization.");
+    }
+
+    if (payment.recipient !== authorization.authorizedRecipient) {
+      throw new Error("Payment recipient does not match authorization.");
+    }
+  }
+
   private fail(flow: Flow, error: string): Flow {
     flow.status = "failed";
     flow.outcome = {
@@ -158,6 +210,12 @@ export class FlowMintAgent {
         flow,
         "Payment cannot be submitted from the current flow state.",
       );
+    }
+
+    try {
+      this.validateAuthorizationBinding(flow);
+    } catch (error) {
+      return this.fail(flow, error instanceof Error ? error.message : "Authorization binding validation failed.");
     }
 
     if (!flow.payment) {

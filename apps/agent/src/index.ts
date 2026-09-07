@@ -1,6 +1,7 @@
 import { FlowMintAgent } from "./agent/flowmint-agent";
 import { ServiceRegistry } from "./services/service-registry";
 import type { Service } from "./agent/types";
+import { MockServiceProvider } from "./services/mock-service-provider";
 
 const USDC = "0xceba9300f2b948710d2653dd7b07f33a8b32118c" as const;
 
@@ -12,6 +13,7 @@ const basicService: Service = {
   description: "Simple logo design for small businesses.",
   provider: "0x1111111111111111111111111111111111111111",
   capabilities: ["design"],
+  status: "available",
   pricing: {
     currency: USDC,
     amount: 2_000_000n,
@@ -25,6 +27,7 @@ const professionalService: Service = {
   description: "Professional logo design with faster turnaround.",
   provider: "0x3333333333333333333333333333333333333333",
   capabilities: ["design"],
+  status: "available",
   pricing: {
     currency: USDC,
     amount: 5_000_000n,
@@ -41,6 +44,7 @@ const agent = new FlowMintAgent({
     maxPayment: 10_000_000n,
     allowedCurrencies: [USDC],
   },
+  serviceProvider: new MockServiceProvider(),
 });
 
 const flow = agent.createFlow({

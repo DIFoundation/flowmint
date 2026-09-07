@@ -2,19 +2,23 @@ import type { Flow, FlowIntent, PaymentAuthorization, Service, ServiceQuote } fr
 import { ServiceRegistry } from "../services/service-registry";
 import { validatePayment, type PaymentPolicy } from "../policies/payment-policy";
 import { rankServices } from "./decision-engine";
+import type { ServiceProvider } from "../services/service-provider";
 
 export interface FlowMintAgentConfig {
   registry: ServiceRegistry;
   paymentPolicy: PaymentPolicy;
+  serviceProvider: ServiceProvider;
 }
 
 export class FlowMintAgent {
   private readonly registry: ServiceRegistry;
   private readonly paymentPolicy: PaymentPolicy;
+  private readonly serviceProvider: ServiceProvider;
 
   constructor(config: FlowMintAgentConfig) {
     this.registry = config.registry;
     this.paymentPolicy = config.paymentPolicy;
+    this.serviceProvider = config.serviceProvider;
   }
 
   createFlow(intent: FlowIntent): Flow {
@@ -96,10 +100,7 @@ export class FlowMintAgent {
 
   authorize(flow: Flow, authorization: PaymentAuthorization): Flow {
     if (flow.status !== "awaiting_authorization") {
-      return this.fail(
-        flow,
-        `Flow ${flow.id} is not awaiting authorization.`,
-      );
+      return this.fail(flow, `Flow ${flow.id} is not awaiting authorization.`);
     }
 
     if (!flow.quote || !flow.selectedService) {
@@ -215,7 +216,12 @@ export class FlowMintAgent {
     try {
       this.validateAuthorizationBinding(flow);
     } catch (error) {
-      return this.fail(flow, error instanceof Error ? error.message : "Authorization binding validation failed.");
+      return this.fail(
+        flow,
+        error instanceof Error
+          ? error.message
+          : "Authorization binding validation failed.",
+      );
     }
 
     if (!flow.payment) {
@@ -252,6 +258,10 @@ export class FlowMintAgent {
       return this.fail(flow, "Flow has no payment.");
     }
 
+    if (!flow.selectedService) {
+      return this.fail(flow, "Flow has no selected service.");
+    }
+
     flow.payment.status = "confirmed";
 
     flow.settlement = {
@@ -261,14 +271,31 @@ export class FlowMintAgent {
       timestamp: Date.now(),
     };
 
+    flow.selectedService.status = "paid";
+
+    const serviceOutcome = this.serviceProvider.fulfill(
+      flow.selectedService,
+      flow.payment,
+    );
+
+    flow.serviceOutcome = serviceOutcome;
+
+    if (!serviceOutcome.success) {
+      flow.selectedService.status = "failed";
+
+      return this.fail(
+        flow,
+        serviceOutcome.error ?? "Service fulfillment failed.",
+      );
+    }
+
+    flow.selectedService.status = "fulfilled";
+
     flow.status = "completed";
 
     flow.outcome = {
       success: true,
-      result: {
-        serviceId: flow.selectedService?.id,
-        txHash: settlement.txHash,
-      },
+      result: serviceOutcome.result,
     };
 
     flow.updatedAt = Date.now();

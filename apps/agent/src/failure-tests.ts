@@ -1,6 +1,7 @@
 import { FlowMintAgent } from "./agent/flowmint-agent";
 import { ServiceRegistry } from "./services/service-registry";
 import type { Service } from "./agent/types";
+import { MockServiceProvider } from "./services/mock-service-provider";
 
 const PROVIDER = "0x1111111111111111111111111111111111111111" as const;
 
@@ -22,6 +23,7 @@ function createAgent(
       maxPayment,
       allowedCurrencies: [USDC],
     },
+    serviceProvider: new MockServiceProvider(),
   });
 }
 
@@ -31,6 +33,7 @@ const service: Service = {
   description: "Failure-path test service.",
   provider: PROVIDER,
   capabilities: ["demo"],
+  status: "available",
   pricing: {
     currency: USDC,
     amount: 1_000_000n,
@@ -250,6 +253,7 @@ const service: Service = {
       maxPayment: 10_000_000n,
       allowedCurrencies: [USDC],
     },
+    serviceProvider: new MockServiceProvider(),
   });
 
   const flow = agent.createFlow({

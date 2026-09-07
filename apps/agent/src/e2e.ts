@@ -3,6 +3,7 @@ import { ServiceRegistry } from "./services/service-registry";
 import { CeloPayment } from "./payments/celo-payment";
 import type { Service } from "./agent/types";
 import { MockCeloPaymentExecutor } from "@flowmint/celo";
+import { MockServiceProvider } from "./services/mock-service-provider";
 
 const USDC = "0xceba9300f2b948710d2653dd7b07f33a8b32118c" as const;
 
@@ -14,6 +15,7 @@ const basicService: Service = {
   description: "Simple logo design for small businesses.",
   provider: "0x1111111111111111111111111111111111111111",
   capabilities: ["design"],
+  status: "available",
   pricing: {
     currency: USDC,
     amount: 2_000_000n,
@@ -27,6 +29,7 @@ const professionalService: Service = {
   description: "Professional logo design with faster turnaround.",
   provider: "0x3333333333333333333333333333333333333333",
   capabilities: ["design"],
+  status: "available",
   pricing: {
     currency: USDC,
     amount: 5_000_000n,
@@ -40,6 +43,7 @@ const inactiveService: Service = {
   description: "Inactive test provider.",
   provider: "0x4444444444444444444444444444444444444444",
   capabilities: ["design"],
+  status: "available",
   pricing: {
     currency: USDC,
     amount: 1_000_000n,
@@ -57,6 +61,7 @@ const agent = new FlowMintAgent({
     maxPayment: 10_000_000n,
     allowedCurrencies: [USDC],
   },
+  serviceProvider: new MockServiceProvider(),
 });
 
 const flow = agent.createFlow({
@@ -130,9 +135,19 @@ async function main() {
 
   const completed = agent.complete(submitted, settlement);
 
+  if (flow.selectedService?.status !== "fulfilled") {
+    throw new Error("Selected service was not fulfilled.");
+  }
+
+  if (!flow.serviceOutcome?.success) {
+    throw new Error("Service outcome was not successful.");
+  }
+
   console.log("10. Completed:", completed.status);
   console.log("11. Settlement:", completed.settlement);
   console.log("12. Outcome:", completed.outcome);
+  console.log("13. Service Status:", completed.selectedService?.status);
+  console.log("14. Service Outcome:", completed.serviceOutcome);
 
   if (!settlement.confirmed) {
     throw new Error("Settlement was not confirmed.");
@@ -142,7 +157,7 @@ async function main() {
     throw new Error("Flow did not complete.");
   }
 
-  console.log("RESULT: FLOWMINT M2.1 DECISION FLOW PASSED");
+  console.log("RESULT: FLOWMINT M2.3 SERVICE FULFILLMENT FLOW PASSED");
 }
 
 main().catch((error) => {

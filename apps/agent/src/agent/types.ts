@@ -21,17 +21,38 @@ export interface FlowIntent {
   constraints?: Record<string, string>;
 }
 
+export type ServiceStatus =
+  | "available"
+  | "reserved"
+  | "paid"
+  | "fulfilled"
+  | "failed"
+  | "refunded";
+
 export interface Service {
   id: string;
   name: string;
   description: string;
   provider: `0x${string}`;
   capabilities: string[];
+
+  status: ServiceStatus;
+
   pricing: {
     currency: `0x${string}`;
     amount: bigint;
   };
   active: boolean;
+}
+
+export interface ServiceOutcome {
+  success: boolean;
+  serviceId: string;
+  provider: `0x${string}`;
+  completedAt?: number;
+  reference?: string;
+  result?: unknown;
+  error?: string;
 }
 
 export interface ServiceQuote {
@@ -100,6 +121,9 @@ export interface Flow {
 
   payment?: Payment;
   settlement?: Settlement;
+
+  serviceOutcome?: ServiceOutcome;
+
   outcome?: FlowOutcome;
 
   createdAt: number;

@@ -1,7 +1,8 @@
 import { FlowMintAgent } from "./agent/flowmint-agent";
 import { ServiceRegistry } from "./services/service-registry";
-import type { Service } from "./agent/types";
+import type { Payment, Service, ServiceOutcome } from "./agent/types";
 import { MockServiceProvider } from "./services/mock-service-provider";
+import type { ServiceProvider } from "./services/service-provider";
 
 const PROVIDER = "0x1111111111111111111111111111111111111111" as const;
 
@@ -352,9 +353,9 @@ const service: Service = {
     description: "Prevent token tampering.",
   });
 
-  agent.evaluate(flow);
+  const evaluated = agent.evaluate(flow);
 
-  const authorized = agent.authorize(flow, {
+  const authorized = agent.authorize(evaluated, {
     payer: "0x2222222222222222222222222222222222222222",
     authorizedAmount: 1_000_000n,
     authorizedToken: USDC,
@@ -366,13 +367,13 @@ const service: Service = {
     throw new Error("Expected authorization to succeed.");
   }
 
-  if (!flow.payment) {
+  if (!authorized.payment) {
     throw new Error("Expected payment to exist.");
   }
 
-  flow.payment.token = "0x3333333333333333333333333333333333333332";
+  authorized.payment.token = "0x3333333333333333333333333333333333333332";
 
-  const result = agent.submitPayment(flow);
+  const result = agent.submitPayment(authorized);
 
   if (result.status !== "failed") {
     throw new Error("Expected token tampering to fail.");
@@ -393,9 +394,9 @@ const service: Service = {
     description: "Prevent recipient tampering.",
   });
 
-  agent.evaluate(flow);
+  const evaluated = agent.evaluate(flow);
 
-  const authorized = agent.authorize(flow, {
+  const authorized = agent.authorize(evaluated, {
     payer: "0x2222222222222222222222222222222222222222",
     authorizedAmount: 1_000_000n,
     authorizedToken: USDC,
@@ -407,13 +408,13 @@ const service: Service = {
     throw new Error("Expected authorization to succeed.");
   }
 
-  if (!flow.payment) {
+  if (!authorized.payment) {
     throw new Error("Expected payment to exist.");
   }
 
-  flow.payment.recipient = "0x3333333333333333333333333333333333333333";
+  authorized.payment.recipient = "0x3333333333333333333333333333333333333333";
 
-  const result = agent.submitPayment(flow);
+  const result = agent.submitPayment(authorized);
 
   if (result.status !== "failed") {
     throw new Error("Expected recipient tampering to fail.");
@@ -434,9 +435,9 @@ const service: Service = {
     description: "Prevent payer tampering.",
   });
 
-  agent.evaluate(flow);
+  const evaluated = agent.evaluate(flow);
 
-  const authorized = agent.authorize(flow, {
+  const authorized = agent.authorize(evaluated, {
     payer: "0x2222222222222222222222222222222222222222",
     authorizedAmount: 1_000_000n,
     authorizedToken: USDC,
@@ -448,13 +449,13 @@ const service: Service = {
     throw new Error("Expected authorization to succeed.");
   }
 
-  if (!flow.payment) {
+  if (!authorized.payment) {
     throw new Error("Expected payment to exist.");
   }
 
-  flow.payment.payer = "0x3333333333333333333333333333333333333333";
+  authorized.payment.payer = "0x3333333333333333333333333333333333333333";
 
-  const result = agent.submitPayment(flow);
+  const result = agent.submitPayment(authorized);
 
   if (result.status !== "failed") {
     throw new Error("Expected payer tampering to fail.");
@@ -465,6 +466,142 @@ const service: Service = {
   }
 
   console.log("✅ Payer tampering rejected");
+}
+
+// 15. Failing service provider
+{
+  class FailingServiceProvider implements ServiceProvider {
+    fulfill(service: Service, payment: Payment): ServiceOutcome {
+      return {
+        success: false,
+        serviceId: service.id,
+        provider: service.provider,
+        error: "Service fulfillment intentionally failed.",
+      };
+    }
+  }
+
+  const registry = new ServiceRegistry();
+  registry.register(service);
+
+  const agent = new FlowMintAgent({
+  registry,
+  paymentPolicy: {
+    maxPayment: 5_000_000n,
+    allowedCurrencies: [USDC],
+  },
+  serviceProvider: new FailingServiceProvider(),
+});
+
+  (agent as any)["serviceProvider"] = new FailingServiceProvider();
+
+  const flow = agent.createFlow({
+    description: "Test failing service provider.",
+  });
+
+  const evaluated = agent.evaluate(flow);
+
+  if (evaluated.status !== "awaiting_authorization") {
+    throw new Error("Expected flow to await authorization.");
+  }
+
+  const authorized = agent.authorize(evaluated, {
+    payer: "0x2222222222222222222222222222222222222222",
+    authorizedAmount: 1_000_000n,
+    authorizedToken: USDC,
+    authorizedRecipient: PROVIDER,
+    authorizedAt: Date.now(),
+  });
+
+  if (authorized.status !== "payment_pending") {
+    throw new Error("Expected authorization to succeed.");
+  }
+
+  const submitted = agent.submitPayment(authorized);
+
+  if (submitted.status !== "settling") {
+    throw new Error("Expected payment to be submitted.");
+  }
+
+  const result = agent.complete(submitted, {
+    txHash: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    confirmed: true,
+    blockNumber: 1n,
+  });
+
+  if (result.status !== "failed") {
+    throw new Error("Expected service fulfillment to fail.");
+  }
+
+  if (!result.outcome?.error?.toLowerCase().includes("fulfill")) {
+    throw new Error("Expected service fulfillment failure reason.");
+  }
+
+  console.log("✅ Failing service provider rejected");
+}
+
+// 16. Service fulfillment with unconfirmed payment
+{
+  service.status = "available";
+
+  const agent = createAgent(service);
+
+  const flow = agent.createFlow({
+    description: "Test service fulfillment with unconfirmed payment.",
+  });
+
+  const evaluated = agent.evaluate(flow);
+
+  if (evaluated.status !== "awaiting_authorization") {
+    throw new Error("Expected flow to await authorization.");
+  }
+
+  const authorized = agent.authorize(evaluated, {
+    payer: "0x2222222222222222222222222222222222222222",
+    authorizedAmount: 1_000_000n,
+    authorizedToken: USDC,
+    authorizedRecipient: PROVIDER,
+    authorizedAt: Date.now(),
+  });
+
+  if (authorized.status !== "payment_pending") {
+    throw new Error("Expected authorization to succeed.");
+  }
+
+  const submitted = agent.submitPayment(authorized);
+
+  if (submitted.status !== "settling") {
+    throw new Error("Expected payment to be submitted.");
+  }
+
+  const result = agent.complete(submitted, {
+    txHash: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    confirmed: false,
+  });
+
+  if (result.payment?.status !== "submitted") {
+  throw new Error(
+    "Payment should remain submitted when settlement is unconfirmed.",
+  );
+}
+
+if (result.serviceOutcome) {
+  throw new Error(
+    "Service must not be fulfilled when settlement is unconfirmed.",
+  );
+}
+
+if (result.selectedService?.status !== "available") {
+  throw new Error(
+    "Service must remain available when payment is unconfirmed.",
+  );
+}
+
+  if (result.status !== "failed") {
+    throw new Error("Expected unconfirmed settlement to fail.");
+  }
+
+  console.log("✅ Service fulfillment with unconfirmed payment rejected");
 }
 
 console.log("\n🔥 ALL FAILURE-PATH TESTS PASSED");

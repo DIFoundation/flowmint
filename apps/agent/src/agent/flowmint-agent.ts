@@ -262,11 +262,15 @@ export class FlowMintAgent {
       return this.fail(flow, "Flow has no selected service.");
     }
 
+    if (!settlement.confirmed) {
+      return this.fail(flow, "Payment settlement was not confirmed.");
+    }
+
     flow.payment.status = "confirmed";
 
     flow.settlement = {
       txHash: settlement.txHash,
-      confirmed: true,
+      confirmed: settlement.confirmed,
       blockNumber: settlement.blockNumber,
       timestamp: Date.now(),
     };

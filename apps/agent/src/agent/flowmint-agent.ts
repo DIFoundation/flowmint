@@ -1,6 +1,16 @@
-import type { Flow, FlowIntent, PaymentAuthorization, Service, ServiceQuote } from "./types";
+import type {
+  AgentExecutionResult,
+  Flow,
+  FlowIntent,
+  PaymentAuthorization,
+  Service,
+  ServiceQuote,
+} from "./types";
 import { ServiceRegistry } from "../services/service-registry";
-import { validatePayment, type PaymentPolicy } from "../policies/payment-policy";
+import {
+  validatePayment,
+  type PaymentPolicy,
+} from "../policies/payment-policy";
 import { rankServices } from "./decision-engine";
 import type { ServiceProvider } from "../services/service-provider";
 
@@ -19,6 +29,25 @@ export class FlowMintAgent {
     this.registry = config.registry;
     this.paymentPolicy = config.paymentPolicy;
     this.serviceProvider = config.serviceProvider;
+  }
+
+  start(intent: FlowIntent): AgentExecutionResult {
+    const flow = this.createFlow(intent);
+    const evaluated = this.evaluate(flow);
+
+    if (evaluated.status === "failed") {
+      return {
+        flow: evaluated,
+        stage: "failed",
+        requiresAuthorization: false,
+      };
+    }
+
+    return {
+      flow: evaluated,
+      stage: "awaiting_authorization",
+      requiresAuthorization: true,
+    };
   }
 
   createFlow(intent: FlowIntent): Flow {
@@ -151,6 +180,30 @@ export class FlowMintAgent {
     return flow;
   }
 
+  continue(
+    flow: Flow,
+    authorization: PaymentAuthorization,
+    settlement: {
+      txHash: `0x${string}`;
+      confirmed: boolean;
+      blockNumber?: bigint;
+    },
+  ): Flow {
+    const authorized = this.authorize(flow, authorization);
+
+    if (authorized.status === "failed") {
+      return authorized;
+    }
+
+    const submitted = this.submitPayment(authorized);
+
+    if (submitted.status === "failed") {
+      return submitted;
+    }
+
+    return this.complete(submitted, settlement);
+  }
+
   private createQuote(service: Service): ServiceQuote {
     return {
       serviceId: service.id,
@@ -260,10 +313,6 @@ export class FlowMintAgent {
 
     if (!flow.selectedService) {
       return this.fail(flow, "Flow has no selected service.");
-    }
-
-    if (!settlement.confirmed) {
-      return this.fail(flow, "Payment settlement was not confirmed.");
     }
 
     flow.payment.status = "confirmed";

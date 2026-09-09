@@ -14,13 +14,6 @@ export type PaymentStatus =
   | "confirmed"
   | "failed";
 
-export interface FlowIntent {
-  description: string;
-  maxBudget?: bigint;
-  preferredCurrency?: string;
-  constraints?: Record<string, string>;
-}
-
 export type ServiceStatus =
   | "available"
   | "reserved"
@@ -28,6 +21,20 @@ export type ServiceStatus =
   | "fulfilled"
   | "failed"
   | "refunded";
+
+export type AgentExecutionStage =
+  | "awaiting_authorization"
+  | "payment_pending"
+  | "settling"
+  | "completed"
+  | "failed";
+
+export interface FlowIntent {
+  description: string;
+  maxBudget?: bigint;
+  preferredCurrency?: string;
+  constraints?: Record<string, string>;
+}
 
 export interface Service {
   id: string;
@@ -106,6 +113,12 @@ export interface FlowOutcome {
   success: boolean;
   result?: unknown;
   error?: string;
+}
+
+export interface AgentExecutionResult {
+  flow: Flow;
+  stage: AgentExecutionStage;
+  requiresAuthorization: boolean;
 }
 
 export interface Flow {

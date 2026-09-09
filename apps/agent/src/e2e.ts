@@ -135,11 +135,11 @@ async function main() {
 
   const completed = agent.complete(submitted, settlement);
 
-  if (flow.selectedService?.status !== "fulfilled") {
+  if (completed.selectedService?.status !== "fulfilled") {
     throw new Error("Selected service was not fulfilled.");
   }
 
-  if (!flow.serviceOutcome?.success) {
+  if (!completed.serviceOutcome?.success) {
     throw new Error("Service outcome was not successful.");
   }
 

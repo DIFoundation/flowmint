@@ -485,13 +485,13 @@ const service: Service = {
   registry.register(service);
 
   const agent = new FlowMintAgent({
-  registry,
-  paymentPolicy: {
-    maxPayment: 5_000_000n,
-    allowedCurrencies: [USDC],
-  },
-  serviceProvider: new FailingServiceProvider(),
-});
+    registry,
+    paymentPolicy: {
+      maxPayment: 5_000_000n,
+      allowedCurrencies: [USDC],
+    },
+    serviceProvider: new FailingServiceProvider(),
+  });
 
   (agent as any)["serviceProvider"] = new FailingServiceProvider();
 
@@ -524,7 +524,8 @@ const service: Service = {
   }
 
   const result = agent.complete(submitted, {
-    txHash: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    txHash:
+      "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     confirmed: true,
     blockNumber: 1n,
   });
@@ -575,33 +576,80 @@ const service: Service = {
   }
 
   const result = agent.complete(submitted, {
-    txHash: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    txHash:
+      "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     confirmed: false,
   });
 
   if (result.payment?.status !== "submitted") {
-  throw new Error(
-    "Payment should remain submitted when settlement is unconfirmed.",
-  );
-}
+    throw new Error(
+      "Payment should remain submitted when settlement is unconfirmed.",
+    );
+  }
 
-if (result.serviceOutcome) {
-  throw new Error(
-    "Service must not be fulfilled when settlement is unconfirmed.",
-  );
-}
+  if (result.serviceOutcome) {
+    throw new Error(
+      "Service must not be fulfilled when settlement is unconfirmed.",
+    );
+  }
 
-if (result.selectedService?.status !== "available") {
-  throw new Error(
-    "Service must remain available when payment is unconfirmed.",
-  );
-}
+  if (result.selectedService?.status !== "available") {
+    throw new Error(
+      "Service must remain available when payment is unconfirmed.",
+    );
+  }
 
   if (result.status !== "failed") {
     throw new Error("Expected unconfirmed settlement to fail.");
   }
 
   console.log("✅ Service fulfillment with unconfirmed payment rejected");
+}
+
+// 17. Agent loop stops at authorization boundary
+{
+  const registry = new ServiceRegistry();
+  registry.register(service);
+
+  const agent = new FlowMintAgent({
+    registry,
+    paymentPolicy: {
+      maxPayment: 5_000_000n,
+      allowedCurrencies: [USDC],
+    },
+    serviceProvider: new MockServiceProvider(),
+  });
+
+  const result = agent.start({
+    description: "Start an economic service flow.",
+    maxBudget: 3_000_000n,
+    preferredCurrency: USDC,
+    constraints: {
+      capability: "demo",
+    },
+  });
+
+  if (result.stage !== "awaiting_authorization") {
+    throw new Error("Expected agent loop to stop at authorization boundary.");
+  }
+
+  if (!result.requiresAuthorization) {
+    throw new Error("Expected agent loop to require explicit authorization.");
+  }
+
+  if (result.flow.selectedService?.id !== service.id) {
+    throw new Error("Expected agent loop to select the service.");
+  }
+
+  if (!result.flow.quote) {
+    throw new Error("Expected agent loop to produce a service quote.");
+  }
+
+  if (result.flow.payment) {
+    throw new Error("Payment must not exist before explicit authorization.");
+  }
+
+  console.log("✅ Agent loop stopped at authorization boundary");
 }
 
 console.log("\n🔥 ALL FAILURE-PATH TESTS PASSED");

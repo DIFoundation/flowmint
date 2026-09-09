@@ -31,6 +31,22 @@ export class FlowMintAgent {
     this.serviceProvider = config.serviceProvider;
   }
 
+  createFlow(intent: FlowIntent): Flow {
+    const now = Date.now();
+
+    return {
+      id: crypto.randomUUID(),
+      intent,
+      status: "created",
+      decision: {
+        reasons: [],
+        candidates: [],
+      },
+      createdAt: now,
+      updatedAt: now,
+    };
+  }
+
   start(intent: FlowIntent): AgentExecutionResult {
     const flow = this.createFlow(intent);
     const evaluated = this.evaluate(flow);
@@ -47,22 +63,6 @@ export class FlowMintAgent {
       flow: evaluated,
       stage: "awaiting_authorization",
       requiresAuthorization: true,
-    };
-  }
-
-  createFlow(intent: FlowIntent): Flow {
-    const now = Date.now();
-
-    return {
-      id: crypto.randomUUID(),
-      intent,
-      status: "created",
-      decision: {
-        reasons: [],
-        candidates: [],
-      },
-      createdAt: now,
-      updatedAt: now,
     };
   }
 

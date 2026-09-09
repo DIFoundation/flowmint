@@ -493,8 +493,6 @@ const service: Service = {
     serviceProvider: new FailingServiceProvider(),
   });
 
-  (agent as any)["serviceProvider"] = new FailingServiceProvider();
-
   const flow = agent.createFlow({
     description: "Test failing service provider.",
   });

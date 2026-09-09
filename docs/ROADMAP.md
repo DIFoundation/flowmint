@@ -36,15 +36,15 @@
 
 ## M2 — Agent Decision Layer
 **Tasks**
-- [ ] Input schema
-- [ ] Tools
-- [ ] Decisions
-- [ ] Hard rules
-- [ ] Spending limits
-- [ ] Refusal conditions
-- [ ] Escalation conditions
-- [ ] Smallest useful agent loop
-- [ ] Normal/ambiguous/malicious-request tests
+- [x] Input schema
+- [x] Tools
+- [x] Decisions
+- [x] Hard rules
+- [x] Spending limits
+- [x] Refusal conditions
+- [x] Escalation conditions
+- [x] Smallest useful agent loop
+- [x] Normal/ambiguous/malicious-request tests
 
 **Exit:** valid requests produce safe structured execution plans; unsafe/out-of-authority requests are refused.
 

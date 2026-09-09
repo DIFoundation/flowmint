@@ -1,4 +1,4 @@
-# my-celo-app
+# Flowmint Documentation
 
 A new Celo blockchain project
 

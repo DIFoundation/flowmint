@@ -2,15 +2,22 @@ import type {
   AgentExecutionResult,
   Flow,
   FlowIntent,
+  IntentRejection,
   PaymentAuthorization,
   Service,
   ServiceQuote,
 } from "./types";
+import { validateFlowIntent } from "./validate-intent";
 import { ServiceRegistry } from "../services/service-registry";
 import {
   validatePayment,
   type PaymentPolicy,
 } from "../policies/payment-policy";
+import {
+  evaluateEscalation,
+  DEFAULT_ESCALATION_POLICY,
+  type EscalationPolicy,
+} from "../policies/escalation-policy";
 import { rankServices } from "./decision-engine";
 import type { ServiceProvider } from "../services/service-provider";
 
@@ -18,17 +25,20 @@ export interface FlowMintAgentConfig {
   registry: ServiceRegistry;
   paymentPolicy: PaymentPolicy;
   serviceProvider: ServiceProvider;
+  escalationPolicy?: EscalationPolicy;
 }
 
 export class FlowMintAgent {
   private readonly registry: ServiceRegistry;
   private readonly paymentPolicy: PaymentPolicy;
   private readonly serviceProvider: ServiceProvider;
+  private readonly escalationPolicy: EscalationPolicy;
 
   constructor(config: FlowMintAgentConfig) {
     this.registry = config.registry;
     this.paymentPolicy = config.paymentPolicy;
     this.serviceProvider = config.serviceProvider;
+    this.escalationPolicy = config.escalationPolicy ?? DEFAULT_ESCALATION_POLICY;
   }
 
   createFlow(intent: FlowIntent): Flow {
@@ -56,6 +66,16 @@ export class FlowMintAgent {
         flow: evaluated,
         stage: "failed",
         requiresAuthorization: false,
+        requiresEscalationReview: false,
+      };
+    }
+
+    if (evaluated.status === "escalated") {
+      return {
+        flow: evaluated,
+        stage: "escalated",
+        requiresAuthorization: false,
+        requiresEscalationReview: true,
       };
     }
 
@@ -63,6 +83,7 @@ export class FlowMintAgent {
       flow: evaluated,
       stage: "awaiting_authorization",
       requiresAuthorization: true,
+      requiresEscalationReview: false,
     };
   }
 
@@ -121,11 +142,86 @@ export class FlowMintAgent {
       candidates: rankings,
     };
 
+    const escalation = evaluateEscalation(
+      flow.intent,
+      quote,
+      this.paymentPolicy,
+      this.escalationPolicy,
+      rankings,
+    );
+
+    flow.escalation = escalation;
+
+    if (escalation.required) {
+      flow.status = "escalated";
+      flow.updatedAt = Date.now();
+
+      return flow;
+    }
+
     flow.status = "awaiting_authorization";
     flow.updatedAt = Date.now();
 
     return flow;
   }
+
+  /**
+   * Hardened entry point for untrusted input (HTTP bodies, LLM tool-call
+   * arguments, etc.). Validates the raw payload into a FlowIntent before
+   * it ever reaches the decision layer, and rejects it outright — no
+   * Flow is created — if it fails validation.
+   */
+  startFromUnknown(raw: unknown): AgentExecutionResult | IntentRejection {
+    const validation = validateFlowIntent(raw);
+
+    if (!validation.valid) {
+      return {
+        stage: "rejected",
+        error: validation.reason,
+      };
+    }
+
+    return this.start(validation.intent);
+  }
+
+  /**
+     * Resolve a flow that the decision layer escalated for human review.
+     * This is a distinct boundary from `authorize()`: escalation resolution
+     * decides whether the agent's proposed plan is even allowed to reach the
+     * normal payment-authorization step, it does not authorize a payment.
+     */
+    resolveEscalation(
+      flow: Flow,
+      resolution: { approved: boolean; reviewer: string; note?: string },
+    ): Flow {
+      if (flow.status !== "escalated") {
+        return this.fail(
+          flow,
+          `Flow ${flow.id} is not awaiting escalation review.`,
+        );
+      }
+  
+      flow.escalationResolution = {
+        approved: resolution.approved,
+        reviewer: resolution.reviewer,
+        note: resolution.note,
+        resolvedAt: Date.now(),
+      };
+  
+      if (!resolution.approved) {
+        return this.fail(
+          flow,
+          `Escalation rejected by ${resolution.reviewer}${
+            resolution.note ? `: ${resolution.note}` : "."
+          }`,
+        );
+      }
+  
+      flow.status = "awaiting_authorization";
+      flow.updatedAt = Date.now();
+  
+      return flow;
+    }
 
   authorize(flow: Flow, authorization: PaymentAuthorization): Flow {
     if (flow.status !== "awaiting_authorization") {

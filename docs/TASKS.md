@@ -1,6 +1,6 @@
 # FlowMint Task Board
 
-**Current milestone: M1 — Economic Workflow**
+**Current milestone: M3 — Trust & Verification**
 
 Only advance when the current milestone's exit criteria in `ROADMAP.md` are satisfied.
 
@@ -50,17 +50,23 @@ Attribution:    celo_c81681d9bae5
 ```
 
 ## M2
-- [ ] Agent input schema.
-- [ ] Tools.
-- [ ] Decisions.
-- [ ] Hard rules.
-- [ ] Spending limits.
-- [ ] Refusal conditions.
-- [ ] Escalation conditions.
-- [ ] Agent loop.
-- [ ] Decision tests.
-- [ ] Ambiguous/malicious tests.
-- [ ] M2 exit criteria.
+- [x] Agent input schema. (`agent/types.ts` FlowIntent + runtime validation in `agent/validate-intent.ts`)
+- [x] Tools. (`tools/index.ts`)
+- [x] Decisions. (`agent/decision-engine.ts`)
+- [x] Hard rules. (`policies/payment-policy.ts`)
+- [x] Spending limits. (`paymentPolicy.maxPayment`, `intent.maxBudget`)
+- [x] Refusal conditions. (ineligible service, policy violation — see `failure-tests.ts`)
+- [x] Escalation conditions. (`policies/escalation-policy.ts`: high-value, vague intent, no-budget-on-high-value, tied ranking)
+- [x] Agent loop. (`start()` halts at authorization boundary; `resolveEscalation()` halts at review boundary)
+- [x] Decision tests. (`decision-tests.ts`)
+- [x] Ambiguous/malicious tests. (`decision-tests.ts`: normal/ambiguous/malicious sections, 16 tests)
+- [x] M2 exit criteria.
+
+```
+M2 evidence: apps/agent/src/decision-tests.ts (16/16 passing)
+             apps/agent/src/failure-tests.ts (17/17 passing)
+             pnpm --filter @flowmint/agent test
+```
 
 ## M3
 - [ ] Authority model.

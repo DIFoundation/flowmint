@@ -58,5 +58,17 @@ Important product/architecture decisions. Do not casually reverse them.
 **Decision:** Roadmap controls product scope.  
 **Reason:** Prevent feature drift and preserve execution speed.
 
+## 015 — Escalation as a distinct third path
+**Decision:** The agent's decision layer can escalate a flow for human review, separate from refuse/proceed. Triggers: quote ≥80% of the agent's spending limit, intent description <8 chars, no user-specified budget on a quote ≥3,000,000 (base units), or a tied top-ranked service candidate. An escalated flow can only reach authorization via `resolveEscalation()`; it cannot be authorized directly.
+**Reason:** `docs/AGENT.md` requires refusal conditions *and* escalation conditions as distinct agent rules. Without escalation, the decision layer only had two outcomes (refuse or proceed), so genuinely ambiguous or high-risk requests were either silently auto-approved for authorization or incorrectly auto-refused.
+**Alternatives:** Route ambiguous cases through refusal (rejected — throws away legitimate requests that just need clarification/oversight, not denial).
+**Impact:** `apps/agent/src/policies/escalation-policy.ts`, `agent/flowmint-agent.ts`, `agent/types.ts`. Thresholds are policy-configurable and will need tuning once real usage data exists (M6).
+
+## 016 — Runtime validation at the agent boundary
+**Decision:** Add `validateFlowIntent()` / `agent.startFromUnknown()` as a hardened entry point that validates untrusted input (HTTP bodies, LLM tool-call arguments) before any `Flow` is created, rejecting non-object payloads, forbidden keys (`__proto__`, `constructor`, `prototype`), malformed budgets, and oversized fields.
+**Reason:** `FlowIntent` was previously a TypeScript interface only — compile-time safety, no runtime protection. Once `apps/web` calls the agent over an API boundary, TypeScript types provide zero protection against malformed or adversarial JSON.
+**Alternatives:** Add a schema library (zod). Deferred — the validation surface is currently small enough that a hand-written guard avoids a new dependency; revisit if the schema grows materially.
+**Impact:** `apps/agent/src/agent/validate-intent.ts`. `agent.start()` (the pre-existing typed entry point) is unchanged and still used internally/in tests.
+
 ## New decision template
 `Decision NNN | Title | Status | Decision | Reason | Alternatives | Impact`

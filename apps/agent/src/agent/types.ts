@@ -1,6 +1,7 @@
 export type FlowStatus =
   | "created"
   | "evaluating"
+  | "escalated"
   | "awaiting_authorization"
   | "payment_pending"
   | "settling"
@@ -23,11 +24,13 @@ export type ServiceStatus =
   | "refunded";
 
 export type AgentExecutionStage =
+  | "escalated"
   | "awaiting_authorization"
   | "payment_pending"
   | "settling"
   | "completed"
-  | "failed";
+  | "failed"
+  | "rejected";
 
 export interface FlowIntent {
   description: string;
@@ -85,6 +88,18 @@ export interface ServiceDecision {
   candidates: ServiceScore[];
 }
 
+export interface EscalationDecision {
+  required: boolean;
+  reasons: string[];
+}
+
+export interface EscalationResolution {
+  approved: boolean;
+  reviewer: string;
+  note?: string;
+  resolvedAt: number;
+}
+
 export interface PaymentAuthorization {
   payer: `0x${string}`;
   authorizedAmount: bigint;
@@ -119,6 +134,12 @@ export interface AgentExecutionResult {
   flow: Flow;
   stage: AgentExecutionStage;
   requiresAuthorization: boolean;
+  requiresEscalationReview: boolean;
+}
+
+export interface IntentRejection {
+  stage: "rejected";
+  error: string;
 }
 
 export interface Flow {
@@ -130,6 +151,9 @@ export interface Flow {
   quote?: ServiceQuote;
   decision: ServiceDecision;
 
+  escalation?: EscalationDecision;
+  escalationResolution?: EscalationResolution;
+  
   authorization?: PaymentAuthorization;
 
   payment?: Payment;

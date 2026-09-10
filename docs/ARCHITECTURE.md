@@ -24,10 +24,33 @@ Real-world Outcome
 ## Repository
 ```text
 flowmint/
-├── apps/web/
-├── apps/contracts/
-├── packages/shared/
+├── apps/
+│   ├── agent/
+│   │   └── src/
+│   │       ├── agent/          # Flow lifecycle and orchestration
+│   │       ├── services/       # Service registry/provider boundary
+│   │       ├── payments/       # Celo payment execution
+│   │       ├── wallet/         # Wallet ownership/control boundaries
+│   │       ├── policies/       # Payment and spending policies
+│   │       └── runtime/        # Celo runtime/preflight infrastructure
+│   │
+│   ├── web/                    # User-facing application
+│   └── contracts/              # Contracts where required by product/security
+│
+├── packages/
+│   ├── celo/                   # Celo-specific primitives
+│   ├── config/                 # Shared configuration
+│   └── types/                  # Shared domain types
+│
 └── docs/
+    ├── PRODUCT.md
+    ├── ARCHITECTURE.md
+    ├── AGENT.md
+    ├── WALLET-OWNERSHIP.md
+    ├── DECISIONS.md
+    ├── ROADMAP.md
+    ├── TASKS.md
+    └── HACKATHON.md
 ```
 
 ## Web boundaries
@@ -46,6 +69,26 @@ Do not put financial business logic directly in page components.
 Deploy contracts only when they provide a real security, authorization, settlement or product function. Do not deploy for hackathon optics.
 
 ## Wallet model
+FlowMint is non-custodial for user-authorized payments.
+
+There are two operational wallet roles:
+
+1. **User/external wallet**
+   - controlled by the user or external participant
+   - private key remains outside FlowMint
+   - must sign its own authorized payment
+
+2. **FlowMint agent wallet**
+   - dedicated operational wallet
+   - used only for FlowMint-owned operations
+   - must never become the payer of a user-authorized flow
+
+The critical invariant is:
+
+```text
+authorized payer === transaction signer
+```
+
 User wallet is non-custodial. The registered agent wallet is:
 `0x03a72b85e54519cd293A77eaa043cA5deeaC73F4`
 

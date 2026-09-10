@@ -68,18 +68,26 @@ M2 evidence: apps/agent/src/decision-tests.ts (16/16 passing)
              pnpm --filter @flowmint/agent test
 ```
 
-## M3
-- [x] Wallet ownership. (`docs/TRUST.md` §1, `apps/agent/src/wallet/ownership.ts`, `apps/agent/src/wallet-ownership-tests.ts`)
-- [ ] Authority model.
-- [ ] Authorization model.
-- [ ] Recipient verification.
-- [ ] Payment preview.
-- [ ] Audit trail.
-- [ ] Failure/recovery.
-- [ ] Threat model.
-- [ ] Evaluate Self.
-- [ ] Evaluate fee abstraction.
-- [ ] M3 exit criteria.
+## M3 — Trust & Verification
+
+### Completed
+
+- [x] Wallet ownership/control boundary
+- [x] Agent wallet identity
+- [x] Agent wallet exclusion from user payments
+- [x] Payer/signer equality validation
+- [x] Wallet ownership failure tests
+
+### Next
+
+- [ ] Define agent authority
+- [ ] Enforce spending limits through execution
+- [ ] Verify recipients before payment
+- [ ] Build transaction preview
+- [ ] Add activity/audit record
+- [ ] Define failure and recovery states
+- [ ] Add account-change/disconnect integration tests
+- [ ] Write threat model
 
 ## M4
 - [ ] Mainnet config.

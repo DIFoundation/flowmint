@@ -9,6 +9,8 @@ Read before coding:
 4. `docs/HACKATHON.md`
 5. `docs/DECISIONS.md`
 6. `docs/TASKS.md`
+7. `docs/WALLET-OWNERSHIP.md`
+8. `docs/TRUST.md`
 
 ## Non-negotiable
 Do not turn FlowMint into a generic AI agent, chatbot, agent directory, Aigora-style marketplace, AI wrapper, generic wallet, or transaction-volume generator.
@@ -34,6 +36,21 @@ Agent must have explicit inputs, tools, authority, bounded actions, deterministi
 
 ## Wallet rules
 Never request/store seed phrases or private keys. Keep user wallets non-custodial. Bound agent authority. Correctly handle disconnect/account changes and clean up listeners.
+
+### Wallet control boundary
+
+FlowMint must never silently sign a user-authorized payment with its own agent wallet.
+
+For every user-authorized payment:
+
+- the authorized payer must be explicit;
+- the signing wallet must be known;
+- payer and signer must match;
+- mismatches must fail before broadcast;
+- account changes must invalidate stale wallet-dependent state;
+- disconnects must prevent wallet-dependent execution.
+
+The agent wallet may sign only FlowMint-owned operational transactions.
 
 ## Celo rules
 Use mainnet for counted activity. Preserve `celo_c81681d9bae5`. Never manufacture volume/users.

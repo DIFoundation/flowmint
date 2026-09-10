@@ -49,19 +49,43 @@
 **Exit:** valid requests produce safe structured execution plans; unsafe/out-of-authority requests are refused.
 
 ## M3 — Trust & Verification
-**Tasks**
-- [x] Wallet ownership
-- [ ] Agent authority
-- [ ] Spending limits
-- [ ] Authorization levels
+
+### Status
+
+**In progress**
+
+### Completed
+
+- [x] Wallet role separation
+- [x] Registered FlowMint agent wallet
+- [x] Agent wallet cannot act as user payer
+- [x] Authorized payer must match signing wallet
+- [x] Pre-execution signer validation
+- [x] Defense-in-depth payment validation
+- [x] Wallet ownership/control failure tests
+
+### Remaining
+
+- [ ] Agent authority model
+- [ ] Spending-limit enforcement across the full execution path
 - [ ] Recipient verification
 - [ ] Transaction preview
-- [ ] Audit/activity records
-- [ ] Failure/recovery
+- [ ] Activity/audit records
+- [ ] Failure/recovery model
 - [ ] Threat model
-- [ ] Evaluate Self/fee abstraction only if useful
+- [ ] Account-change/disconnect integration tests
 
-**Exit:** a reviewer can understand why a payment was allowed, who authorized it, where it went, and what happens on failure.
+### Exit
+
+A reviewer can understand:
+
+1. who authorized a payment;
+2. which wallet is authorized;
+3. which wallet signs;
+4. why the payment was allowed;
+5. where funds are sent;
+6. how settlement is verified;
+7. what happens when verification fails.
 
 ## M4 — Payment Execution
 **Tasks**

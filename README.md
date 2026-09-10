@@ -1,58 +1,155 @@
-# Flowmint Documentation
+# FlowMint
 
-A new Celo blockchain project
+> Autonomous economic execution on Celo.
 
-A modern Celo blockchain application built with Next.js, TypeScript, and Turborepo.
+FlowMint is a Celo-native economic agent that helps users discover services, evaluate options against explicit constraints, obtain authorization, execute stablecoin payments, verify settlement, and complete real-world service outcomes.
 
-## Getting Started
+## The Problem
 
-1. Install dependencies:
-   ```bash
-   pnpm install
-   ```
+Most AI agents can recommend or communicate, but they stop before the economic action.
 
-2. Start the development server:
-   ```bash
-   pnpm dev
-   ```
+FlowMint focuses on the missing layer:
 
-3. Open [http://localhost:3000](http://localhost:3000) in your browser.
+```text
+Intent
+  ↓
+Decision
+  ↓
+Quote
+  ↓
+Authorization
+  ↓
+Wallet validation
+  ↓
+Celo payment
+  ↓
+Settlement verification
+  ↓
+Service fulfillment
+```
 
-## Project Structure
+## Core Principle
 
-This is a monorepo managed by Turborepo with the following structure:
+FlowMint is not a generic chatbot and not a generic wallet.
 
-- `apps/web` - Next.js application with embedded UI components and utilities
-- `apps/hardhat` - Smart contract development environment
+It is an economic-flow agent.
 
-## Available Scripts
+The agent may reason about:
 
-- `pnpm dev` - Start development servers
-- `pnpm build` - Build all packages and apps
-- `pnpm lint` - Lint all packages and apps
-- `pnpm type-check` - Run TypeScript type checking
+* what the user wants;
+* which available service best satisfies the request;
+* whether the service fits the user's budget;
+* whether the payment satisfies FlowMint's policy;
+* what authorization is required.
 
-### Smart Contract Scripts
+The agent may not bypass explicit payment authorization or silently spend from a user's wallet.
 
-- `pnpm contracts:compile` - Compile smart contracts
-- `pnpm contracts:test` - Run smart contract tests
-- `pnpm contracts:deploy` - Deploy contracts to local network
-- `pnpm contracts:deploy:celo-sepolia` - Deploy to Celo Sepolia Testnet
-- `pnpm contracts:deploy:celo` - Deploy to Celo Mainnet
+## Wallet Security
 
-## Tech Stack
+FlowMint uses a non-custodial user-wallet model.
 
-- **Framework**: Next.js 14 with App Router
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **UI Components**: shadcn/ui
-- **Smart Contracts**: Hardhat with Viem
-- **Monorepo**: Turborepo
-- **Package Manager**: PNPM
+The critical invariant is:
 
-## Learn More
+```text
+authorized payer === signing wallet
+```
 
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Celo Documentation](https://docs.celo.org/)
-- [Turborepo Documentation](https://turbo.build/repo/docs)
-- [shadcn/ui Documentation](https://ui.shadcn.com/)
+The FlowMint agent wallet is separate from user wallets and cannot act as the payer of a user-authorized flow.
+
+See [`docs/WALLET-OWNERSHIP.md`](docs/WALLET-OWNERSHIP.md).
+
+## Current Capabilities
+
+### M1 — Celo Payment Rail
+
+* Celo mainnet
+* stablecoin payment execution
+* transaction simulation
+* balance and signer preflight
+* settlement verification
+* transaction attribution
+
+### M2 — Agent Economic Flow
+
+* intent creation
+* deterministic service ranking
+* budget enforcement
+* payment policy enforcement
+* explicit authorization
+* authorization binding
+* payment lifecycle
+* settlement lifecycle
+* service fulfillment
+* failure-path testing
+* agent execution loop
+
+### M3 — Trust & Verification
+
+Current work includes:
+
+* wallet role separation
+* payer/signer validation
+* agent-wallet protection
+* bounded authority
+* recipient verification
+* transaction preview
+* activity records
+* failure/recovery
+
+## Architecture
+
+See:
+
+* [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+* [`docs/AGENT.md`](docs/AGENT.md)
+* [`docs/WALLET-OWNERSHIP.md`](docs/WALLET-OWNERSHIP.md)
+* [`docs/DECISIONS.md`](docs/DECISIONS.md)
+* [`docs/ROADMAP.md`](docs/ROADMAP.md)
+
+## Repository
+
+```text
+apps/agent      Agent runtime and economic execution
+apps/web        User-facing application
+apps/contracts  Product/security contracts where required
+packages/celo   Celo primitives
+packages/config Shared configuration
+packages/types  Shared types
+docs            Product and engineering documentation
+```
+
+## Development
+
+```bash
+pnpm install
+```
+
+Agent checks:
+
+```bash
+pnpm --filter @flowmint/agent type-check
+pnpm --filter @flowmint/agent exec tsx src/e2e.ts
+pnpm --filter @flowmint/agent exec tsx src/failure-tests.ts
+```
+
+## Security
+
+FlowMint:
+
+* never requests seed phrases;
+* never stores user private keys;
+* does not assume unrestricted control of user wallets;
+* requires explicit authorization;
+* validates payer/signer equality;
+* verifies settlement before fulfillment;
+* keeps agent-owned spending separate from user-authorized spending.
+
+## Celo
+
+FlowMint is built around Celo stablecoin payments and preserves the project's transaction attribution requirements.
+
+## Status
+
+FlowMint is an active hackathon-stage project focused on demonstrating safe, observable and useful autonomous economic execution on Celo.
+
+The implementation is intentionally milestone-driven rather than feature-maximal.

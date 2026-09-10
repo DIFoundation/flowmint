@@ -8,6 +8,7 @@ import {
   createStablecoinPayment,
   type CeloPaymentExecutor,
 } from "@flowmint/celo";
+import { assertPayerIsSigner } from "../wallet/ownership";
 
 export interface AgentPaymentClients {
   publicClient: PublicClient;
@@ -24,6 +25,12 @@ export class CeloPayment {
     payment: Payment,
     clients: AgentPaymentClients,
   ): Promise<Settlement> {
+    assertPayerIsSigner(
+      payment.payer,
+      clients.account.address as `0x${string}`,
+      "CeloPayment.execute",
+    );
+    
     const stablecoinPayment = createStablecoinPayment({
       symbol: this.resolveStablecoinSymbol(payment.token),
       recipient: payment.recipient,

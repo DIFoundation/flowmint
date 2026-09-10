@@ -69,6 +69,7 @@ M2 evidence: apps/agent/src/decision-tests.ts (16/16 passing)
 ```
 
 ## M3
+- [x] Wallet ownership. (`docs/TRUST.md` §1, `apps/agent/src/wallet/ownership.ts`, `apps/agent/src/wallet-ownership-tests.ts`)
 - [ ] Authority model.
 - [ ] Authorization model.
 - [ ] Recipient verification.

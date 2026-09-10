@@ -7,8 +7,10 @@ import {
   assertCeloMainnet,
 } from "./celo-client";
 
-const EXPECTED_FLOWMINT_WALLET =
-  "0x03a72b85e54519cd293A77eaa043cA5deeaC73F4";
+import {
+  FLOWMINT_AGENT_WALLET_ADDRESS,
+  assertIsAgentWallet,
+} from "../wallet/ownership";
 
 async function main() {
   const client = createCeloPublicClient();
@@ -22,17 +24,13 @@ async function main() {
   console.log("Derived address:", account.address);
   console.log(
     "Expected address:",
-    EXPECTED_FLOWMINT_WALLET,
+    FLOWMINT_AGENT_WALLET_ADDRESS,
   );
 
-  if (
-    account.address.toLowerCase() !==
-    EXPECTED_FLOWMINT_WALLET.toLowerCase()
-  ) {
-    throw new Error(
-      "Signer address does not match the FlowMint agent wallet.",
-    );
-  }
+  assertIsAgentWallet(
+    account.address as `0x${string}`,
+    "signer-preflight",
+  );
 
   console.log("Signer:", account.address);
   console.log("STATUS: FLOWMINT SIGNER VERIFIED");

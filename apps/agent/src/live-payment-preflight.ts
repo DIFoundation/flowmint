@@ -5,6 +5,7 @@ import { createFlowMintAccount, createFlowMintWalletClient } from "./runtime/flo
 
 import { MainnetCeloPaymentExecutor, createStablecoinPayment } from "@flowmint/celo";
 import { FLOWMINT_LIVE_EXECUTION } from "./runtime/execution-config";
+import { assertIsAgentWallet } from "./wallet/ownership";
 
 const RECIPIENT = "0x1111111111111111111111111111111111111111" as const;
 
@@ -15,6 +16,11 @@ async function main() {
 
   const account = createFlowMintAccount();
   const walletClient = createFlowMintWalletClient();
+
+  assertIsAgentWallet(
+    account.address as `0x${string}`,
+    "live-payment-preflight",
+  );
 
   const payment = createStablecoinPayment({
     symbol: "USDC",

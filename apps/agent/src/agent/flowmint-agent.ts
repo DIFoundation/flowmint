@@ -18,6 +18,7 @@ import {
   DEFAULT_ESCALATION_POLICY,
   type EscalationPolicy,
 } from "../policies/escalation-policy";
+import { assertNotAgentWallet } from "../wallet/ownership";
 import { rankServices } from "./decision-engine";
 import type { ServiceProvider } from "../services/service-provider";
 
@@ -226,6 +227,17 @@ export class FlowMintAgent {
   authorize(flow: Flow, authorization: PaymentAuthorization): Flow {
     if (flow.status !== "awaiting_authorization") {
       return this.fail(flow, `Flow ${flow.id} is not awaiting authorization.`);
+    }
+
+    try {
+      assertNotAgentWallet(authorization.payer, "FlowMintAgent.authorize");
+    } catch (error) {
+      return this.fail(
+        flow,
+        error instanceof Error
+          ? error.message
+          : "Wallet-ownership violation on authorization.",
+      );
     }
 
     if (!flow.quote || !flow.selectedService) {

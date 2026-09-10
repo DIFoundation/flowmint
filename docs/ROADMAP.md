@@ -50,7 +50,7 @@
 
 ## M3 — Trust & Verification
 **Tasks**
-- [ ] Wallet ownership
+- [x] Wallet ownership
 - [ ] Agent authority
 - [ ] Spending limits
 - [ ] Authorization levels

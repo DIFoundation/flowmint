@@ -5,8 +5,9 @@ import {
 
 import { CELO_STABLECOINS } from "@flowmint/celo";
 import { formatUnits } from "viem";
+import { FLOWMINT_AGENT_WALLET_ADDRESS } from "../wallet/ownership";
 
-const FLOWMINT_WALLET = "0x03a72b85e54519cd293A77eaa043cA5deeaC73F4" as const;
+const FLOWMINT_WALLET = FLOWMINT_AGENT_WALLET_ADDRESS;
 
 const ERC20_BALANCE_ABI = [
   {

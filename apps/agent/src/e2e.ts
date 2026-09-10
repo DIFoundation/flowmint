@@ -130,7 +130,7 @@ async function main() {
   const settlement = await celoPayment.execute(authorized.payment, {
     publicClient: {} as never,
     walletClient: {} as never,
-    account: {} as never,
+    account: { address: authorized.payment.payer } as never,
   });
 
   const completed = agent.complete(submitted, settlement);

@@ -142,6 +142,22 @@ export interface IntentRejection {
   error: string;
 }
 
+export interface FlowEvidence {
+  event:
+    | "flow_created"
+    | "decision_made"
+    | "escalation_required"
+    | "escalation_resolved"
+    | "authorization_granted"
+    | "payment_submitted"
+    | "settlement_confirmed"
+    | "service_completed"
+    | "flow_failed";
+
+  timestamp: number;
+  details: Record<string, unknown>;
+}
+
 export interface Flow {
   id: string;
   intent: FlowIntent;
@@ -162,6 +178,8 @@ export interface Flow {
   serviceOutcome?: ServiceOutcome;
 
   outcome?: FlowOutcome;
+
+  evidence: FlowEvidence[];
 
   createdAt: number;
   updatedAt: number;

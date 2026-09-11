@@ -212,6 +212,194 @@ async function main() {
   console.log("\n🔥 ALL WALLET-OWNERSHIP TESTS PASSED");
 }
 
+// 8. Authorization preserves the service recipient
+{
+  const service: Service = {
+    id: "svc-recipient",
+    name: "Recipient Verification Service",
+    description: "Recipient verification test service.",
+    provider: PROVIDER,
+    capabilities: ["recipient-test"],
+    status: "available",
+    pricing: { currency: USDC, amount: 1_000_000n },
+    active: true,
+  };
+
+  const registry = new ServiceRegistry();
+  registry.register(service);
+
+  const agent = new FlowMintAgent({
+    registry,
+    paymentPolicy: {
+      maxPayment: 5_000_000n,
+      allowedCurrencies: [USDC],
+    },
+    serviceProvider: new MockServiceProvider(),
+  });
+
+  const started = agent.start({
+    description: "I need the recipient test service.",
+    maxBudget: 2_000_000n,
+    constraints: { capability: "recipient-test" },
+  });
+
+  if (started.stage !== "awaiting_authorization") {
+    throw new Error("Expected setup flow to await authorization.");
+  }
+
+  const result = agent.authorize(started.flow, {
+    payer: USER,
+    authorizedAmount: 1_000_000n,
+    authorizedToken: USDC,
+    authorizedRecipient: PROVIDER,
+    authorizedAt: Date.now(),
+  });
+
+  if (result.status !== "payment_pending") {
+    throw new Error("Expected authorization to move the flow to payment_pending.");
+  }
+
+  if (result.payment?.recipient !== PROVIDER) {
+    throw new Error(
+      "Expected the payment recipient to match the selected service provider.",
+    );
+  }
+
+  console.log("✅ authorization preserves the selected service recipient");
+}
+
+// 9. Authorization rejects recipient substitution
+{
+  const service: Service = {
+    id: "svc-recipient-attack",
+    name: "Recipient Attack Test Service",
+    description: "Recipient substitution test service.",
+    provider: PROVIDER,
+    capabilities: ["recipient-attack"],
+    status: "available",
+    pricing: { currency: USDC, amount: 1_000_000n },
+    active: true,
+  };
+
+  const registry = new ServiceRegistry();
+  registry.register(service);
+
+  const agent = new FlowMintAgent({
+    registry,
+    paymentPolicy: {
+      maxPayment: 5_000_000n,
+      allowedCurrencies: [USDC],
+    },
+    serviceProvider: new MockServiceProvider(),
+  });
+
+  const started = agent.start({
+    description: "I need the recipient attack test service.",
+    maxBudget: 2_000_000n,
+    constraints: { capability: "recipient-attack" },
+  });
+
+  if (started.stage !== "awaiting_authorization") {
+    throw new Error("Expected setup flow to await authorization.");
+  }
+
+  const attacker = "0x3333333333333333333333333333333333333333" as const;
+
+  const result = agent.authorize(started.flow, {
+    payer: USER,
+    authorizedAmount: 1_000_000n,
+    authorizedToken: USDC,
+    authorizedRecipient: attacker,
+    authorizedAt: Date.now(),
+  });
+
+  if (result.status !== "failed") {
+    throw new Error(
+      "Expected authorization with a substituted recipient to fail.",
+    );
+  }
+
+  if (!result.outcome?.error?.toLowerCase().includes("recipient")) {
+    throw new Error(
+      "Expected a recipient-verification failure reason.",
+    );
+  }
+
+  console.log("✅ authorization rejects recipient substitution");
+}
+
+// 10. Payment submission rejects recipient tampering
+{
+  const service: Service = {
+    id: "svc-submit-recipient",
+    name: "Submit Recipient Test Service",
+    description: "Payment submission recipient test service.",
+    provider: PROVIDER,
+    capabilities: ["submit-recipient"],
+    status: "available",
+    pricing: { currency: USDC, amount: 1_000_000n },
+    active: true,
+  };
+
+  const registry = new ServiceRegistry();
+  registry.register(service);
+
+  const agent = new FlowMintAgent({
+    registry,
+    paymentPolicy: {
+      maxPayment: 5_000_000n,
+      allowedCurrencies: [USDC],
+    },
+    serviceProvider: new MockServiceProvider(),
+  });
+
+  const started = agent.start({
+    description: "I need the submit recipient test service.",
+    maxBudget: 2_000_000n,
+    constraints: { capability: "submit-recipient" },
+  });
+
+  if (started.stage !== "awaiting_authorization") {
+    throw new Error("Expected setup flow to await authorization.");
+  }
+
+  const authorized = agent.authorize(started.flow, {
+    payer: USER,
+    authorizedAmount: 1_000_000n,
+    authorizedToken: USDC,
+    authorizedRecipient: PROVIDER,
+    authorizedAt: Date.now(),
+  });
+
+  if (authorized.status !== "payment_pending") {
+    throw new Error("Expected authorization to create a pending payment.");
+  }
+
+  // Simulate malicious recipient mutation after authorization.
+  if (!authorized.payment) {
+    throw new Error("Expected authorized flow to contain a payment.");
+  }
+
+  authorized.payment.recipient =
+    "0x3333333333333333333333333333333333333333";
+
+  const result = agent.submitPayment(authorized);
+
+  if (result.status !== "failed") {
+    throw new Error(
+      "Expected payment submission to reject recipient tampering.",
+    );
+  }
+
+  if (!result.outcome?.error?.toLowerCase().includes("recipient")) {
+    throw new Error(
+      "Expected a recipient-verification failure reason.",
+    );
+  }
+
+  console.log("✅ submitPayment() rejects recipient tampering");
+}
+
 main().catch((error) => {
   console.error(error);
   process.exit(1);

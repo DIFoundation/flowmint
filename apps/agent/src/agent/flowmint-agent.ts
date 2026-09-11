@@ -1,6 +1,7 @@
 import type {
   AgentExecutionResult,
   Flow,
+  FlowEvidence,
   FlowIntent,
   IntentRejection,
   PaymentAuthorization,
@@ -21,6 +22,10 @@ import {
 import { assertNotAgentWallet } from "../wallet/ownership";
 import { rankServices } from "./decision-engine";
 import type { ServiceProvider } from "../services/service-provider";
+import {
+  assertRecipientMatchesService,
+  assertRecipientMatchesQuote,
+} from "../payments/recipient-verification";
 
 export interface FlowMintAgentConfig {
   registry: ServiceRegistry;
@@ -39,7 +44,8 @@ export class FlowMintAgent {
     this.registry = config.registry;
     this.paymentPolicy = config.paymentPolicy;
     this.serviceProvider = config.serviceProvider;
-    this.escalationPolicy = config.escalationPolicy ?? DEFAULT_ESCALATION_POLICY;
+    this.escalationPolicy =
+      config.escalationPolicy ?? DEFAULT_ESCALATION_POLICY;
   }
 
   createFlow(intent: FlowIntent): Flow {
@@ -53,6 +59,17 @@ export class FlowMintAgent {
         reasons: [],
         candidates: [],
       },
+      evidence: [
+        {
+          event: "flow_created",
+          timestamp: now,
+          details: {
+            description: intent.description,
+            maxBudget: intent.maxBudget?.toString(),
+            preferredCurrency: intent.preferredCurrency,
+          },
+        },
+      ],
       createdAt: now,
       updatedAt: now,
     };
@@ -143,6 +160,12 @@ export class FlowMintAgent {
       candidates: rankings,
     };
 
+    this.recordEvidence(flow, "decision_made", {
+      serviceId: service.id,
+      score: selected.score,
+      reasons: selected.reasons,
+    });
+
     const escalation = evaluateEscalation(
       flow.intent,
       quote,
@@ -152,6 +175,12 @@ export class FlowMintAgent {
     );
 
     flow.escalation = escalation;
+
+    if (escalation.required) {
+      this.recordEvidence(flow, "escalation_required", {
+        reasons: escalation.reasons,
+      });
+    }
 
     if (escalation.required) {
       flow.status = "escalated";
@@ -186,43 +215,49 @@ export class FlowMintAgent {
   }
 
   /**
-     * Resolve a flow that the decision layer escalated for human review.
-     * This is a distinct boundary from `authorize()`: escalation resolution
-     * decides whether the agent's proposed plan is even allowed to reach the
-     * normal payment-authorization step, it does not authorize a payment.
-     */
-    resolveEscalation(
-      flow: Flow,
-      resolution: { approved: boolean; reviewer: string; note?: string },
-    ): Flow {
-      if (flow.status !== "escalated") {
-        return this.fail(
-          flow,
-          `Flow ${flow.id} is not awaiting escalation review.`,
-        );
-      }
-  
-      flow.escalationResolution = {
-        approved: resolution.approved,
-        reviewer: resolution.reviewer,
-        note: resolution.note,
-        resolvedAt: Date.now(),
-      };
-  
-      if (!resolution.approved) {
-        return this.fail(
-          flow,
-          `Escalation rejected by ${resolution.reviewer}${
-            resolution.note ? `: ${resolution.note}` : "."
-          }`,
-        );
-      }
-  
-      flow.status = "awaiting_authorization";
-      flow.updatedAt = Date.now();
-  
-      return flow;
+   * Resolve a flow that the decision layer escalated for human review.
+   * This is a distinct boundary from `authorize()`: escalation resolution
+   * decides whether the agent's proposed plan is even allowed to reach the
+   * normal payment-authorization step, it does not authorize a payment.
+   */
+  resolveEscalation(
+    flow: Flow,
+    resolution: { approved: boolean; reviewer: string; note?: string },
+  ): Flow {
+    if (flow.status !== "escalated") {
+      return this.fail(
+        flow,
+        `Flow ${flow.id} is not awaiting escalation review.`,
+      );
     }
+
+    flow.escalationResolution = {
+      approved: resolution.approved,
+      reviewer: resolution.reviewer,
+      note: resolution.note,
+      resolvedAt: Date.now(),
+    };
+
+    this.recordEvidence(flow, "escalation_resolved", {
+      approved: resolution.approved,
+      reviewer: resolution.reviewer,
+      note: resolution.note,
+    });
+
+    if (!resolution.approved) {
+      return this.fail(
+        flow,
+        `Escalation rejected by ${resolution.reviewer}${
+          resolution.note ? `: ${resolution.note}` : "."
+        }`,
+      );
+    }
+
+    flow.status = "awaiting_authorization";
+    flow.updatedAt = Date.now();
+
+    return flow;
+  }
 
   authorize(flow: Flow, authorization: PaymentAuthorization): Flow {
     if (flow.status !== "awaiting_authorization") {
@@ -245,6 +280,16 @@ export class FlowMintAgent {
         flow,
         "Cannot authorize a flow without a selected service and quote.",
       );
+    }
+
+    const paymentPolicyResult = validatePayment(
+      flow.intent,
+      flow.quote,
+      this.paymentPolicy,
+    );
+
+    if (!paymentPolicyResult.allowed) {
+      throw new Error(paymentPolicyResult.reason ?? "Payment violates policy.");
     }
 
     if (authorization.authorizedAmount !== flow.quote.amount) {
@@ -274,13 +319,33 @@ export class FlowMintAgent {
 
     flow.authorization = authorization;
 
+    assertRecipientMatchesService(flow.quote.provider, flow.selectedService);
+
+    assertRecipientMatchesQuote(
+      {
+        token: flow.quote.currency,
+        amount: flow.quote.amount,
+        payer: authorization.payer,
+        recipient: flow.quote.provider,
+        status: "authorized",
+      },
+      flow.quote,
+    );
+
     flow.payment = {
-      token: authorization.authorizedToken,
-      amount: authorization.authorizedAmount,
+      token: flow.quote.currency,
+      amount: flow.quote.amount,
       payer: authorization.payer,
-      recipient: authorization.authorizedRecipient,
+      recipient: flow.quote.provider,
       status: "authorized",
     };
+
+    this.recordEvidence(flow, "authorization_granted", {
+      payer: authorization.payer,
+      amount: authorization.authorizedAmount.toString(),
+      token: authorization.authorizedToken,
+      recipient: authorization.authorizedRecipient,
+    });
 
     flow.status = "payment_pending";
     flow.updatedAt = Date.now();
@@ -319,6 +384,20 @@ export class FlowMintAgent {
       currency: service.pricing.currency,
       amount: service.pricing.amount,
     };
+  }
+
+  private recordEvidence(
+    flow: Flow,
+    event: FlowEvidence["event"],
+    details: Record<string, unknown> = {},
+  ): void {
+    flow.evidence.push({
+      event,
+      timestamp: Date.now(),
+      details,
+    });
+
+    flow.updatedAt = Date.now();
   }
 
   private updateStatus(flow: Flow, status: Flow["status"]): void {
@@ -367,6 +446,16 @@ export class FlowMintAgent {
   }
 
   submitPayment(flow: Flow): Flow {
+    const paymentPolicyResult = validatePayment(
+      flow.intent,
+      flow.quote!,
+      this.paymentPolicy,
+    );
+
+    if (!paymentPolicyResult.allowed) {
+      throw new Error(paymentPolicyResult.reason ?? "Payment violates policy.");
+    }
+
     if (flow.status !== "payment_pending") {
       return this.fail(
         flow,
@@ -389,9 +478,36 @@ export class FlowMintAgent {
       return this.fail(flow, "Flow has no payment to submit.");
     }
 
+    if (!flow.selectedService || !flow.quote) {
+      return this.fail(flow, "Flow is missing service or quote information.");
+    }
+
+    try {
+      assertRecipientMatchesService(
+        flow.payment.recipient,
+        flow.selectedService,
+      );
+
+      assertRecipientMatchesQuote(flow.payment, flow.quote);
+    } catch (error) {
+      return this.fail(
+        flow,
+        error instanceof Error
+          ? error.message
+          : "Payment recipient verification failed.",
+      );
+    }
+
     flow.payment.status = "submitted";
     flow.status = "settling";
     flow.updatedAt = Date.now();
+
+    this.recordEvidence(flow, "payment_submitted", {
+      payer: flow.payment.payer,
+      amount: flow.payment.amount.toString(),
+      token: flow.payment.token,
+      recipient: flow.payment.recipient,
+    });
 
     return flow;
   }
@@ -432,6 +548,12 @@ export class FlowMintAgent {
       timestamp: Date.now(),
     };
 
+    this.recordEvidence(flow, "settlement_confirmed", {
+      txHash: flow.settlement?.txHash,
+      confirmed: flow.settlement?.confirmed,
+      blockNumber: flow.settlement?.blockNumber?.toString(),
+    });
+
     flow.selectedService.status = "paid";
 
     const serviceOutcome = this.serviceProvider.fulfill(
@@ -460,6 +582,11 @@ export class FlowMintAgent {
     };
 
     flow.updatedAt = Date.now();
+
+    this.recordEvidence(flow, "service_completed", {
+      serviceId: flow.selectedService?.id,
+      provider: flow.selectedService?.provider,
+    });
 
     return flow;
   }

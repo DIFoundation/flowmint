@@ -76,5 +76,35 @@ Important product/architecture decisions. Do not casually reverse them.
 **Alternatives:** Rely solely on the post-broadcast on-chain `verify()` check in `@flowmint/celo` (rejected — fails late, after a real transaction and gas cost, rather than before broadcasting).
 **Impact:** `apps/agent/src/wallet/ownership.ts` (new), `agent/flowmint-agent.ts` (`authorize()`), `payments/celo-payment.ts` (`execute()`), `runtime/signer-preflight.ts`, `runtime/balance-check.ts`, `live-payment-preflight.ts` now import the single agent-wallet-address constant instead of duplicating the literal. Documented in `docs/TRUST.md` §1.
 
+## 018 — Fail-closed via return, never throw, across the Flow state machine
+**Decision:** Every public `FlowMintAgent` method that operates on a `Flow` must return a failed `Flow` (via the private `fail()` helper) on any invalid state or validation failure — never throw an uncaught exception. `fail()` now also records a `flow_failed` audit-trail event centrally, so every failure path gets one automatically.
+**Reason:** The M3 recipient-verification and defense-in-depth payment-policy re-checks added to `authorize()`/`submitPayment()` initially used `throw new Error(...)` and an unguarded `flow.quote!` non-null assertion. Running the existing regression suite (not just reading the diff) surfaced a real crash: `submitPayment()` on a freshly-created flow — exactly what `failure-tests.ts` test 6 does on purpose — threw instead of failing gracefully, because the new check ran before the existing state guard and used `flow.quote!` on a genuinely undefined value.
+**Alternatives:** Leave the re-checks as throws and require every caller to wrap every call in try/catch (rejected — no caller in this codebase does that today, and it silently breaks the established contract every other method follows).
+**Impact:** `apps/agent/src/agent/flowmint-agent.ts` (`authorize()`, `submitPayment()`, `fail()`). No test behavior changed for already-passing cases; the crashing test now passes as originally intended.
+
+## 019 — Agent authority and authorization levels defined explicitly
+**Decision:** Two authorization tiers exist today — Standard (direct `authorize()`) and Escalated (must clear `resolveEscalation()` first) — and neither allows the agent to move funds on its own. The agent never calls `authorize()`, `submitPayment()`, or `complete()` on itself; those always require an external caller supplying real authorization/settlement data.
+**Reason:** `ARCHITECTURE.md` flagged "define authority in M3" as an open item. This was largely already true in code (nothing in `FlowMintAgent` self-invokes the payment methods) but wasn't stated anywhere as an explicit rule a reviewer could check the codebase against.
+**Alternatives:** Add a third, lower-friction tier for repeat/trusted providers (e.g. auto-execute under some threshold). Deferred — no milestone requires it yet and it would meaningfully widen the trust surface; revisit only with evidence of real friction.
+**Impact:** Documentation only (`docs/TRUST.md` §2, §4) — codifies an invariant that was already true rather than changing behavior.
+
+## 020 — Transaction preview built only from trusted internal state
+**Decision:** `agent.preview(flow)` (`agent/payment-preview.ts`) returns what a human should see before authorizing, built exclusively from `flow.quote`/`flow.selectedService`/`flow.escalation` — the same fields `authorize()` itself uses to construct the real `Payment`. There is no code path that lets a preview be built from caller-supplied override values.
+**Reason:** A preview that could diverge from what actually gets authorized is worse than no preview — it would give false confidence. Deriving both from the same source by construction makes drift structurally impossible rather than something to test for after the fact (though it's tested anyway — `payment-preview-tests.ts` includes a drift test).
+**Alternatives:** None seriously considered — any design that reconstructs the preview from separate/parallel logic reopens the drift risk this is meant to close.
+**Impact:** `apps/agent/src/agent/payment-preview.ts` (new), `FlowMintAgent.preview()`.
+
+## 021 — Failure/recovery documented honestly, including two open gaps
+**Decision:** Document exactly what happens at each failure stage (`docs/TRUST.md` §8), including two gaps that are not fixed in M3: no timeout/retry for a flow stuck in `"settling"`, and no escrow/refund path if settlement confirms but service fulfillment subsequently fails (direct-transfer architecture pays the provider before fulfillment is attempted).
+**Reason:** M3's exit criterion is that a reviewer can understand what happens on failure — that requires stating the true answer even when the true answer is "there's currently no automated recovery," not implying every failure mode is handled.
+**Alternatives:** Build an escrow contract now to close gap #10 (`THREAT_MODEL.md`). Deferred — `DECISIONS.md` 012 sets the bar for contracts at "real security/settlement function, not optics," and this would be exactly that bar being met, but it's a real scope decision for a future milestone, not something to bolt on inside M3's trust-and-verification pass.
+**Impact:** `docs/TRUST.md` §8, `docs/THREAT_MODEL.md` #9–#10. No code change — this decision is to document the gap clearly rather than paper over it.
+
+## 022 — Evaluate Self / fee abstraction: not pursued now
+**Decision:** Neither "Evaluate Self" nor fee abstraction is implemented in M3.
+**Reason:** `PRODUCT.md`'s scope rule explicitly warns against FlowMint becoming "a collection of unrelated Celo features." Nothing in the current roadmap (M1–M8) requires either, and there's no evidenced user problem either one would solve right now.
+**Alternatives:** Build a minimal version of one now, "since M3 is already touching trust/authority." Rejected — matches the exact anti-pattern `AGENT.md`'s "before every feature" checklist exists to catch (no milestone requires it, no clear evidence it'd create).
+**Impact:** None — explicitly parking scope, same pattern as decision 012.
+
 ## New decision template
 `Decision NNN | Title | Status | Decision | Reason | Alternatives | Impact`

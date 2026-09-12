@@ -90,16 +90,18 @@ A reviewer can understand:
 
 ## M4 — Payment Execution
 **Tasks**
-- [ ] Celo mainnet
+- [x] Celo mainnet — `runtime/celo-client.ts` (`assertCeloMainnet`), exercised for real in `live-payment-preflight.ts`
 - [x] Stablecoin rails
-- [ ] Transaction construction
-- [ ] Attribution tagging
-- [ ] Status tracking
-- [ ] Failure handling
-- [ ] On-chain verification
-- [ ] Controlled mainnet test
+- [x] Transaction construction — `packages/celo/src/payment.ts` (`createStablecoinPayment`)
+- [x] Attribution tagging — `packages/celo/src/attribution.ts`, wired into every constructed payment
+- [ ] Status tracking — Flow/Payment/Settlement status transitions exist in-memory, but nothing polls live chain state or persists it
+- [ ] Failure handling — fail-closed on invalid states, but the M3-flagged gaps remain open (no timeout on stuck settlement, no escrow/refund)
+- [x] On-chain verification — `payment.ts` (`verify()`), checks the real Transfer event's `from`/`to`/`amount`
+- [x] Controlled mainnet test — real 0.001 USDC mainnet tx already produced and logged (M1 evidence)
 
 **Exit:** a real payment works end-to-end and is independently verifiable on-chain.
+
+**Remaining gap:** `packages/celo`'s executor works standalone (`live-payment-preflight.ts`, `e2e.ts`) but `FlowMintAgent.submitPayment()` doesn't call it — an external caller still has to broadcast and feed results back manually. Wiring that is what Status tracking and Failure handling above actually depend on.
 
 ## M5 — MiniPay Distribution
 **Tasks**

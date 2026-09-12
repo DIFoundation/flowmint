@@ -93,15 +93,15 @@ M3 evidence: apps/agent/src/wallet-ownership-tests.ts   (10/10)
 ```
 
 ## M4
-- [ ] Mainnet config.
+- [x] Mainnet config. (`runtime/celo-client.ts`, exercised in `live-payment-preflight.ts`)
 - [x] Stablecoin config. (`packages/celo/src/tokens.ts`: `resolveStablecoin`/`convertStablecoinAmount` — user picks USDC/USDT/USDm at authorization; see `DECISIONS.md` 023, `apps/agent/src/stablecoin-tests.ts`)
-- [ ] Payment construction.
-- [ ] Attribution.
-- [ ] Status.
-- [ ] Failure handling.
-- [ ] On-chain verification.
-- [ ] Controlled mainnet test.
-- [ ] M4 exit criteria.
+- [x] Payment construction. (`packages/celo/src/payment.ts`: `createStablecoinPayment`)
+- [x] Attribution. (`packages/celo/src/attribution.ts`)
+- [ ] Status. (in-memory Flow/Payment status transitions exist; no live polling or persistence)
+- [ ] Failure handling. (fail-closed on invalid states; stuck-settlement timeout and escrow/refund gaps from M3 still open)
+- [x] On-chain verification. (`payment.ts` `verify()` — checks the real Transfer event)
+- [x] Controlled mainnet test. (real 0.001 USDC mainnet tx, logged in M1 evidence)
+- [ ] M4 exit criteria. (blocked on wiring `FlowMintAgent.submitPayment()` to the real executor — currently a manual, external step)
 
 ## M5
 - [ ] MiniPay detection.

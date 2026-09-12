@@ -91,7 +91,7 @@ A reviewer can understand:
 ## M4 — Payment Execution
 **Tasks**
 - [ ] Celo mainnet
-- [ ] Stablecoin rails
+- [x] Stablecoin rails
 - [ ] Transaction construction
 - [ ] Attribution tagging
 - [ ] Status tracking

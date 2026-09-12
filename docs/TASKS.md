@@ -94,7 +94,7 @@ M3 evidence: apps/agent/src/wallet-ownership-tests.ts   (10/10)
 
 ## M4
 - [ ] Mainnet config.
-- [ ] Stablecoin config.
+- [x] Stablecoin config. (`packages/celo/src/tokens.ts`: `resolveStablecoin`/`convertStablecoinAmount` — user picks USDC/USDT/USDm at authorization; see `DECISIONS.md` 023, `apps/agent/src/stablecoin-tests.ts`)
 - [ ] Payment construction.
 - [ ] Attribution.
 - [ ] Status.

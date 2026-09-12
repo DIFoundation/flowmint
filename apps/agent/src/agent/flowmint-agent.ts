@@ -26,6 +26,7 @@ import {
   assertRecipientMatchesService,
   assertRecipientMatchesQuote,
 } from "../payments/recipient-verification";
+import { buildPaymentPreview, type PaymentPreview } from "./payment-preview";
 
 export interface FlowMintAgentConfig {
   registry: ServiceRegistry;
@@ -257,6 +258,15 @@ export class FlowMintAgent {
     flow.updatedAt = Date.now();
 
     return flow;
+  }
+
+  /**
+   * What a human should be shown before calling authorize(). Read-only —
+   * calling this never changes flow state. Returns null if the flow
+   * hasn't reached a quote yet (nothing to preview).
+   */
+  preview(flow: Flow): PaymentPreview | null {
+    return buildPaymentPreview(flow);
   }
 
   authorize(flow: Flow, authorization: PaymentAuthorization): Flow {

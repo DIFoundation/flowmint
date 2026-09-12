@@ -7,7 +7,7 @@
     "dev": "tsx src/index.ts",
     "build": "tsc",
     "type-check": "tsc --noEmit",
-    "test": "tsx src/failure-tests.ts && tsx src/decision-tests.ts && tsx src/wallet-ownership-tests.ts && tsx src/escalation-tests.ts && tsx src/evidence-tests.ts && tsx src/recipient-verification-tests.ts",
+    "test": "tsx src/failure-tests.ts && tsx src/decision-tests.ts && tsx src/wallet-ownership-tests.ts && tsx src/escalation-tests.ts && tsx src/evidence-tests.ts && tsx src/recipient-verification-tests.ts && tsx src/payment-preview-tests.ts",
     "e2e": "tsx src/e2e.ts",
     "preflights": "tsx src/preflight.ts && tsx src/live-payment-preflight.ts && tsx src/runtime/signer-preflight.ts"
   },

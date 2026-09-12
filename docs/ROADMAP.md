@@ -52,28 +52,29 @@
 
 ### Status
 
-**In progress**
+**Complete**
 
-### Completed
+### Tasks
 
-- [x] Wallet role separation
-- [x] Registered FlowMint agent wallet
-- [x] Agent wallet cannot act as user payer
-- [x] Authorized payer must match signing wallet
-- [x] Pre-execution signer validation
-- [x] Defense-in-depth payment validation
-- [x] Wallet ownership/control failure tests
+- [x] Wallet ownership
+- [x] Agent authority
+- [x] Spending limits
+- [x] Authorization levels
+- [x] Recipient verification
+- [x] Transaction preview
+- [x] Audit/activity records
+- [x] Failure/recovery
+- [x] Threat model
+- [x] Evaluate Self/fee abstraction — decided not to pursue now (`DECISIONS.md` 022)
 
-### Remaining
+Full detail and evidence for every item: `docs/TRUST.md`. Threats and
+residual risk: `docs/THREAT_MODEL.md`.
 
-- [ ] Agent authority model
-- [ ] Spending-limit enforcement across the full execution path
-- [ ] Recipient verification
-- [ ] Transaction preview
-- [ ] Activity/audit records
-- [ ] Failure/recovery model
-- [ ] Threat model
-- [ ] Account-change/disconnect integration tests
+### Known gaps carried forward (not blockers for M3's own exit criterion, but real)
+- No persistence for the audit trail — in-memory only, doesn't survive a restart
+- No timeout/retry for a flow stuck in `"settling"`
+- No escrow/refund path if settlement confirms but service fulfillment fails
+- No account-change/disconnect handling yet — there's no wallet-connection code to test against until `apps/web`'s integration is built
 
 ### Exit
 

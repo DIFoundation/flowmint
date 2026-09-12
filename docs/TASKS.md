@@ -1,6 +1,6 @@
 # FlowMint Task Board
 
-**Current milestone: M3 — Trust & Verification**
+**Current milestone: M4 — Payment Execution**
 
 Only advance when the current milestone's exit criteria in `ROADMAP.md` are satisfied.
 
@@ -69,25 +69,28 @@ M2 evidence: apps/agent/src/decision-tests.ts (16/16 passing)
 ```
 
 ## M3 — Trust & Verification
+- [x] Wallet ownership. (`docs/TRUST.md` §1, `wallet/ownership.ts`, `wallet-ownership-tests.ts`)
+- [x] Agent authority. (`docs/TRUST.md` §2)
+- [x] Spending limits. (`docs/TRUST.md` §3, `policies/payment-policy.ts` — already existed from M2, cross-referenced here)
+- [x] Authorization levels. (`docs/TRUST.md` §4, `escalation-tests.ts`)
+- [x] Recipient verification. (`docs/TRUST.md` §5, `payments/recipient-verification.ts`, `recipient-verification-tests.ts`)
+- [x] Transaction preview. (`docs/TRUST.md` §6, `agent/payment-preview.ts`, `payment-preview-tests.ts`)
+- [x] Audit trail. (`docs/TRUST.md` §7, `FlowEvidence` in `agent/types.ts`, `evidence-tests.ts`)
+- [x] Failure/recovery. (`docs/TRUST.md` §8 — includes two documented open gaps: no settlement timeout, no escrow/refund path)
+- [x] Threat model. (`docs/THREAT_MODEL.md`)
+- [x] Evaluate Self. (`DECISIONS.md` 022 — not pursued now)
+- [x] Evaluate fee abstraction. (`DECISIONS.md` 022 — not pursued now)
+- [x] M3 exit criteria.
 
-### Completed
-
-- [x] Wallet ownership/control boundary
-- [x] Agent wallet identity
-- [x] Agent wallet exclusion from user payments
-- [x] Payer/signer equality validation
-- [x] Wallet ownership failure tests
-
-### Next
-
-- [ ] Define agent authority
-- [ ] Enforce spending limits through execution
-- [ ] Verify recipients before payment
-- [ ] Build transaction preview
-- [ ] Add activity/audit record
-- [ ] Define failure and recovery states
-- [ ] Add account-change/disconnect integration tests
-- [ ] Write threat model
+```
+M3 evidence: apps/agent/src/wallet-ownership-tests.ts   (10/10)
+             apps/agent/src/escalation-tests.ts          (4/4)
+             apps/agent/src/evidence-tests.ts             (3/3)
+             apps/agent/src/recipient-verification-tests.ts (1 suite)
+             apps/agent/src/payment-preview-tests.ts      (4/4)
+             apps/agent/src/failure-tests.ts + decision-tests.ts (from M2, still passing)
+             pnpm --filter @flowmint/agent test
+```
 
 ## M4
 - [ ] Mainnet config.

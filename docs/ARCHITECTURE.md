@@ -46,7 +46,7 @@ flowmint/
     ├── PRODUCT.md
     ├── ARCHITECTURE.md
     ├── AGENT.md
-    ├── WALLET-OWNERSHIP.md
+    ├── TRUST.md
     ├── DECISIONS.md
     ├── ROADMAP.md
     ├── TASKS.md
@@ -69,30 +69,13 @@ Do not put financial business logic directly in page components.
 Deploy contracts only when they provide a real security, authorization, settlement or product function. Do not deploy for hackathon optics.
 
 ## Wallet model
-FlowMint is non-custodial for user-authorized payments.
+FlowMint is non-custodial for user-authorized payments. There are two
+operational wallet roles — user/external wallets and the FlowMint agent
+wallet — and the invariant separating them (`authorized payer ===
+transaction signer`) is enforced in code, not just stated here.
 
-There are two operational wallet roles:
-
-1. **User/external wallet**
-   - controlled by the user or external participant
-   - private key remains outside FlowMint
-   - must sign its own authorized payment
-
-2. **FlowMint agent wallet**
-   - dedicated operational wallet
-   - used only for FlowMint-owned operations
-   - must never become the payer of a user-authorized flow
-
-The critical invariant is:
-
-```text
-authorized payer === transaction signer
-```
-
-User wallet is non-custodial. The registered agent wallet is:
-`0x03a72b85e54519cd293A77eaa043cA5deeaC73F4`
-
-Do not assume the agent has unrestricted control over user funds. Define authority in M3.
+Full model, invariants, and what's/isn't implemented: `docs/TRUST.md` §1.
+Registered agent wallet: `0x03a72b85e54519cd293A77eaa043cA5deeaC73F4`.
 
 ## Celo
 Prefer Celo mainnet, Viem/Wagmi, stablecoins, MiniPay injected wallet, fee abstraction where useful, phone-number lookup where useful, and x402 only where it contributes to the core workflow.

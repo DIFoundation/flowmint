@@ -490,6 +490,18 @@ export class FlowMintAgent {
     }
   }
 
+  /**
+   * Fails a flow from outside the agent's own state-machine methods —
+   * used by execution orchestration (e.g. `executeFlow()`) when the real
+   * on-chain broadcast/verification step itself throws, so the flow is
+   * explicitly failed with a clear reason instead of being left stuck in
+   * "settling" indefinitely. Routes through the same private `fail()`
+   * used everywhere else, so evidence recording stays consistent.
+   */
+  failExecution(flow: Flow, reason: string): Flow {
+    return this.fail(flow, reason);
+  }
+
   private fail(flow: Flow, error: string): Flow {
     flow.status = "failed";
     flow.outcome = {

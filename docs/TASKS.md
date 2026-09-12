@@ -1,6 +1,6 @@
 # FlowMint Task Board
 
-**Current milestone: M4 — Payment Execution**
+**Current milestone: M5 — MiniPay Distribution**
 
 Only advance when the current milestone's exit criteria in `ROADMAP.md` are satisfied.
 
@@ -97,11 +97,11 @@ M3 evidence: apps/agent/src/wallet-ownership-tests.ts   (10/10)
 - [x] Stablecoin config. (`packages/celo/src/tokens.ts`: `resolveStablecoin`/`convertStablecoinAmount` — user picks USDC/USDT/USDm at authorization; see `DECISIONS.md` 023, `apps/agent/src/stablecoin-tests.ts`)
 - [x] Payment construction. (`packages/celo/src/payment.ts`: `createStablecoinPayment`)
 - [x] Attribution. (`packages/celo/src/attribution.ts`)
-- [ ] Status. (in-memory Flow/Payment status transitions exist; no live polling or persistence)
-- [ ] Failure handling. (fail-closed on invalid states; stuck-settlement timeout and escrow/refund gaps from M3 still open)
+- [x] Status. (`payments/execute-flow.ts` — real submitPayment → broadcast/verify → complete orchestration, in-memory only)
+- [x] Failure handling. (broadcast/verify throw → `agent.failExecution()`; stuck-settlement-without-throw and escrow gaps remain open, `THREAT_MODEL.md` #9–10)
 - [x] On-chain verification. (`payment.ts` `verify()` — checks the real Transfer event)
 - [x] Controlled mainnet test. (real 0.001 USDC mainnet tx, logged in M1 evidence)
-- [ ] M4 exit criteria. (blocked on wiring `FlowMintAgent.submitPayment()` to the real executor — currently a manual, external step)
+- [x] M4 exit criteria. (`execute-flow-tests.ts` — authorize → submit → broadcast → verify → complete → fulfill, one tested path; see `DECISIONS.md` 024)
 
 ## M5
 - [ ] MiniPay detection.

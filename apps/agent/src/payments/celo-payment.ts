@@ -6,6 +6,7 @@ import type {
 import type { Payment, Settlement } from "../agent/types";
 import {
   createStablecoinPayment,
+  resolveStablecoin,
   type CeloPaymentExecutor,
 } from "@flowmint/celo";
 import { assertPayerIsSigner } from "../wallet/ownership";
@@ -31,8 +32,14 @@ export class CeloPayment {
       "CeloPayment.execute",
     );
     
+    const stablecoin = resolveStablecoin(payment.token);
+
+    if (!stablecoin) {
+      throw new Error(`Unsupported Celo stablecoin: ${payment.token}`);
+    }
+
     const stablecoinPayment = createStablecoinPayment({
-      symbol: this.resolveStablecoinSymbol(payment.token),
+      symbol: stablecoin.symbol,
       recipient: payment.recipient,
       amount: payment.amount,
     });
@@ -55,36 +62,5 @@ export class CeloPayment {
       blockNumber: settlement.blockNumber,
       timestamp: Date.now(),
     };
-  }
-
-  private resolveStablecoinSymbol(
-    token: `0x${string}`,
-  ): "USDm" | "USDC" | "USDT" {
-    const normalized = token.toLowerCase();
-
-    if (
-      normalized ===
-      "0x765de816845861e75a25fca122bb6898b8b1282a"
-    ) {
-      return "USDm";
-    }
-
-    if (
-      normalized ===
-      "0xceba9300f2b948710d2653dd7b07f33a8b32118c"
-    ) {
-      return "USDC";
-    }
-
-    if (
-      normalized ===
-      "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e"
-    ) {
-      return "USDT";
-    }
-
-    throw new Error(
-      `Unsupported Celo stablecoin: ${token}`,
-    );
   }
 }

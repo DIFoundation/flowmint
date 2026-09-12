@@ -289,7 +289,10 @@ export class FlowMintAgent {
     );
 
     if (!paymentPolicyResult.allowed) {
-      throw new Error(paymentPolicyResult.reason ?? "Payment violates policy.");
+      return this.fail(
+        flow,
+        paymentPolicyResult.reason ?? "Payment violates policy.",
+      );
     }
 
     if (authorization.authorizedAmount !== flow.quote.amount) {
@@ -319,18 +322,27 @@ export class FlowMintAgent {
 
     flow.authorization = authorization;
 
-    assertRecipientMatchesService(flow.quote.provider, flow.selectedService);
+    try {
+      assertRecipientMatchesService(flow.quote.provider, flow.selectedService);
 
-    assertRecipientMatchesQuote(
-      {
-        token: flow.quote.currency,
-        amount: flow.quote.amount,
-        payer: authorization.payer,
-        recipient: flow.quote.provider,
-        status: "authorized",
-      },
-      flow.quote,
-    );
+      assertRecipientMatchesQuote(
+        {
+          token: flow.quote.currency,
+          amount: flow.quote.amount,
+          payer: authorization.payer,
+          recipient: flow.quote.provider,
+          status: "authorized",
+        },
+        flow.quote,
+      );
+    } catch (error) {
+      return this.fail(
+        flow,
+        error instanceof Error
+          ? error.message
+          : "Payment recipient verification failed.",
+      );
+    }
 
     flow.payment = {
       token: flow.quote.currency,
@@ -442,24 +454,33 @@ export class FlowMintAgent {
     };
     flow.updatedAt = Date.now();
 
+    this.recordEvidence(flow, "flow_failed", { error });
+
     return flow;
   }
 
   submitPayment(flow: Flow): Flow {
-    const paymentPolicyResult = validatePayment(
-      flow.intent,
-      flow.quote!,
-      this.paymentPolicy,
-    );
-
-    if (!paymentPolicyResult.allowed) {
-      throw new Error(paymentPolicyResult.reason ?? "Payment violates policy.");
-    }
-
     if (flow.status !== "payment_pending") {
       return this.fail(
         flow,
         "Payment cannot be submitted from the current flow state.",
+      );
+    }
+
+    if (!flow.selectedService || !flow.quote) {
+      return this.fail(flow, "Flow is missing service or quote information.");
+    }
+
+    const paymentPolicyResult = validatePayment(
+      flow.intent,
+      flow.quote,
+      this.paymentPolicy,
+    );
+
+    if (!paymentPolicyResult.allowed) {
+      return this.fail(
+        flow,
+        paymentPolicyResult.reason ?? "Payment violates policy.",
       );
     }
 
@@ -476,10 +497,6 @@ export class FlowMintAgent {
 
     if (!flow.payment) {
       return this.fail(flow, "Flow has no payment to submit.");
-    }
-
-    if (!flow.selectedService || !flow.quote) {
-      return this.fail(flow, "Flow is missing service or quote information.");
     }
 
     try {

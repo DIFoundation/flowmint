@@ -129,7 +129,7 @@ function createAgent(amount = 1_000_000n) {
   const resolved = agent.resolveEscalation(started.flow, {
     approved: true,
     reviewer: "human-reviewer",
-    reason: "Approved after human review.",
+    note: "Approved after human review.",
   });
 
   if (resolved.status !== "awaiting_authorization") {

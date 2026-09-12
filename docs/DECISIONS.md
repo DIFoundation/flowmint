@@ -70,5 +70,11 @@ Important product/architecture decisions. Do not casually reverse them.
 **Alternatives:** Add a schema library (zod). Deferred — the validation surface is currently small enough that a hand-written guard avoids a new dependency; revisit if the schema grows materially.
 **Impact:** `apps/agent/src/agent/validate-intent.ts`. `agent.start()` (the pre-existing typed entry point) is unchanged and still used internally/in tests.
 
+## 017 — Wallet ownership as a code-enforced invariant
+**Decision:** FlowMint's agent wallet (`0x03a72b85e54519cd293A77eaa043cA5deeaC73F4`) and user/third-party wallets are formally distinct, with the boundary enforced in code (`apps/agent/src/wallet/ownership.ts`), not just documented: (1) the agent wallet can never be a user's payer/authorizer, (2) a payment's signer must match its declared payer, checked before broadcasting, (3) when the agent wallet signs for itself, the derived address must match the registered address exactly.
+**Reason:** `ARCHITECTURE.md` already stated "do not assume the agent has unrestricted control over user funds — define authority in M3," but nothing in code enforced it. The agent wallet's private key already exists and can sign/broadcast real mainnet transactions (`runtime/flowmint-wallet.ts`); without an explicit invariant, a future bug (e.g. wrong wallet client wired into `CeloPayment.execute()`) could let the agent wallet silently act as a user's payer with no error until the on-chain `verify()` step caught the mismatch after gas was already spent.
+**Alternatives:** Rely solely on the post-broadcast on-chain `verify()` check in `@flowmint/celo` (rejected — fails late, after a real transaction and gas cost, rather than before broadcasting).
+**Impact:** `apps/agent/src/wallet/ownership.ts` (new), `agent/flowmint-agent.ts` (`authorize()`), `payments/celo-payment.ts` (`execute()`), `runtime/signer-preflight.ts`, `runtime/balance-check.ts`, `live-payment-preflight.ts` now import the single agent-wallet-address constant instead of duplicating the literal. Documented in `docs/TRUST.md` §1.
+
 ## New decision template
 `Decision NNN | Title | Status | Decision | Reason | Alternatives | Impact`

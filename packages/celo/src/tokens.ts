@@ -1,26 +1,57 @@
-export interface Stablecoin {
-  symbol: "USDm" | "USDC" | "USDT";
-  address: `0x${string}`;
-  decimals: number;
+import { CELO_STABLECOINS, type CeloStablecoin, type Stablecoin } from "./addresses";
+
+export { CELO_STABLECOINS, type CeloStablecoin, type Stablecoin };
+
+export const FLOWMINT_STABLECOIN_ADDRESSES: `0x${string}`[] = Object.values(
+  CELO_STABLECOINS,
+).map((coin) => coin.address);
+
+/**
+ * Resolves a user-facing symbol ("USDC", "usdt", "USDm") or an on-chain
+ * address into the matching CeloStablecoin. Returns undefined if it
+ * isn't one of FlowMint's supported rails.
+ */
+export function resolveStablecoin(
+  input: string,
+): CeloStablecoin | undefined {
+  const normalized = input.trim().toLowerCase();
+
+  const bySymbol = Object.values(CELO_STABLECOINS).find(
+    (coin) => coin.symbol.toLowerCase() === normalized,
+  );
+
+  if (bySymbol) {
+    return bySymbol;
+  }
+
+  return Object.values(CELO_STABLECOINS).find(
+    (coin) => coin.address.toLowerCase() === normalized,
+  );
 }
 
-export const CELO_STABLECOINS = {
-  USDm: {
-    symbol: "USDm",
-    address: "0x765DE816845861e75A25fCA122bb6898B8B1282a",
-    decimals: 18,
-  },
-  USDC: {
-    symbol: "USDC",
-    address: "0xcebA9300f2b948710d2653dD7B07f33A8B32118C",
-    decimals: 6,
-  },
-  USDT: {
-    symbol: "USDT",
-    address: "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
-    decimals: 6,
-  },
-} as const satisfies Record<string, Stablecoin>;
+/**
+ * Converts an amount denominated in one FlowMint stablecoin's smallest
+ * units into the equivalent amount in another's, assuming a 1:1 USD peg
+ * between all of them (no exchange-rate lookup — just decimal scaling).
+ * Rounds UP on precision loss (e.g. 18-decimal -> 6-decimal) so a
+ * recipient is never shortchanged by truncation.
+ */
+export function convertStablecoinAmount(
+  amount: bigint,
+  from: CeloStablecoin,
+  to: CeloStablecoin,
+): bigint {
+  if (from.address.toLowerCase() === to.address.toLowerCase()) {
+    return amount;
+  }
 
-export type CeloStablecoin =
-  (typeof CELO_STABLECOINS)[keyof typeof CELO_STABLECOINS];
+  if (to.decimals >= from.decimals) {
+    return amount * 10n ** BigInt(to.decimals - from.decimals);
+  }
+
+  const scale = 10n ** BigInt(from.decimals - to.decimals);
+  const truncated = amount / scale;
+  const remainder = amount % scale;
+
+  return remainder > 0n ? truncated + 1n : truncated;
+}

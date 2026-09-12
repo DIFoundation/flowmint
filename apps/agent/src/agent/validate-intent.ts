@@ -1,4 +1,5 @@
 import type { FlowIntent } from "./types";
+import { resolveStablecoin } from "@flowmint/celo";
 
 export type IntentValidationResult =
   | { valid: true; intent: FlowIntent }
@@ -86,6 +87,13 @@ export function validateFlowIntent(raw: unknown): IntentValidationResult {
     }
 
     preferredCurrency = candidate.preferredCurrency;
+
+    if (!resolveStablecoin(preferredCurrency)) {
+      return {
+        valid: false,
+        reason: `Unsupported stablecoin requested: "${preferredCurrency}". FlowMint supports USDC, USDT, and USDm.`,
+      };
+    }
   }
 
   let constraints: Record<string, string> | undefined;

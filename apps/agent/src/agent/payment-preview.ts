@@ -1,4 +1,9 @@
 import type { Flow } from "./types";
+import {
+  resolveStablecoin,
+  convertStablecoinAmount,
+  CELO_STABLECOINS,
+} from "@flowmint/celo";
 
 /**
  * What a human is shown before they authorize a payment. Built strictly
@@ -14,6 +19,13 @@ export interface PaymentPreview {
   provider: `0x${string}`;
   amount: bigint;
   currency: `0x${string}`;
+  /**
+   * The same amount expressed in every FlowMint-supported stablecoin,
+   * so a reviewer can see up front what authorizing in a different
+   * rail than the one quoted would actually cost — the same
+   * conversion `authorize()` itself performs.
+   */
+  equivalentAmounts: Record<string, bigint>;
   escalationRequired: boolean;
   escalationReasons: string[];
 }
@@ -23,6 +35,20 @@ export function buildPaymentPreview(flow: Flow): PaymentPreview | null {
     return null;
   }
 
+  const nativeCoin = resolveStablecoin(flow.quote.currency);
+
+  const equivalentAmounts: Record<string, bigint> = {};
+
+  if (nativeCoin) {
+    for (const coin of Object.values(CELO_STABLECOINS)) {
+      equivalentAmounts[coin.symbol] = convertStablecoinAmount(
+        flow.quote.amount,
+        nativeCoin,
+        coin,
+      );
+    }
+  }
+
   return {
     flowId: flow.id,
     serviceId: flow.selectedService.id,
@@ -30,6 +56,7 @@ export function buildPaymentPreview(flow: Flow): PaymentPreview | null {
     provider: flow.quote.provider,
     amount: flow.quote.amount,
     currency: flow.quote.currency,
+    equivalentAmounts,
     escalationRequired: flow.escalation?.required ?? false,
     escalationReasons: flow.escalation?.reasons ?? [],
   };

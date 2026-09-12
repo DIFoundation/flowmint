@@ -26,6 +26,7 @@ import {
   assertRecipientMatchesService,
   assertRecipientMatchesQuote,
 } from "../payments/recipient-verification";
+import { resolveStablecoin, convertStablecoinAmount } from "@flowmint/celo";
 import { buildPaymentPreview, type PaymentPreview } from "./payment-preview";
 
 export interface FlowMintAgentConfig {
@@ -305,17 +306,50 @@ export class FlowMintAgent {
       );
     }
 
-    if (authorization.authorizedAmount !== flow.quote.amount) {
+    if (authorization.authorizedAmount <= 0n) {
+      return this.fail(flow, "Authorized amount must be positive.");
+    }
+
+    const nativeCoin = resolveStablecoin(flow.quote.currency);
+
+    if (!nativeCoin) {
       return this.fail(
         flow,
-        "Authorized amount does not match the service quote.",
+        `Quote currency ${flow.quote.currency} is not a recognized FlowMint stablecoin.`,
       );
     }
 
-    if (authorization.authorizedToken !== flow.quote.currency) {
+    const settlementCoin = resolveStablecoin(authorization.authorizedToken);
+
+    if (!settlementCoin) {
       return this.fail(
         flow,
-        "Authorized token does not match the service quote currency.",
+        `Unsupported stablecoin requested for settlement: ${authorization.authorizedToken}.`,
+      );
+    }
+
+    const settlementAllowed = this.paymentPolicy.allowedCurrencies.some(
+      (currency) =>
+        currency.toLowerCase() === settlementCoin.address.toLowerCase(),
+    );
+
+    if (!settlementAllowed) {
+      return this.fail(
+        flow,
+        `Stablecoin ${settlementCoin.symbol} is not permitted by payment policy.`,
+      );
+    }
+
+    const expectedAmount = convertStablecoinAmount(
+      flow.quote.amount,
+      nativeCoin,
+      settlementCoin,
+    );
+
+    if (authorization.authorizedAmount !== expectedAmount) {
+      return this.fail(
+        flow,
+        `Authorized amount does not match the service quote (expected ${expectedAmount} ${settlementCoin.symbol}).`,
       );
     }
 
@@ -337,8 +371,8 @@ export class FlowMintAgent {
 
       assertRecipientMatchesQuote(
         {
-          token: flow.quote.currency,
-          amount: flow.quote.amount,
+          token: authorization.authorizedToken,
+          amount: expectedAmount,
           payer: authorization.payer,
           recipient: flow.quote.provider,
           status: "authorized",
@@ -355,8 +389,8 @@ export class FlowMintAgent {
     }
 
     flow.payment = {
-      token: flow.quote.currency,
-      amount: flow.quote.amount,
+      token: authorization.authorizedToken,
+      amount: expectedAmount,
       payer: authorization.payer,
       recipient: flow.quote.provider,
       status: "authorized",

@@ -1,5 +1,6 @@
 import type { FlowIntent, Service, ServiceScore } from "./types";
 import type { PaymentPolicy } from "../policies/payment-policy";
+import { resolveStablecoin } from "@flowmint/celo";
 
 function normalize(value: string): string {
   return value.trim().toLowerCase();
@@ -18,8 +19,8 @@ export function rankServices(
 ): ServiceScore[] {
   const requestedCapability = intent.constraints?.capability;
 
-  const preferredCurrency = intent.preferredCurrency
-    ? normalize(intent.preferredCurrency)
+  const preferredStablecoin = intent.preferredCurrency
+    ? resolveStablecoin(intent.preferredCurrency)
     : undefined;
 
   const scored = services.map((service): ServiceScore => {
@@ -74,12 +75,17 @@ export function rankServices(
       reasons.push("Currency is allowed by policy.");
     }
 
-    if (preferredCurrency) {
-      if (normalize(service.pricing.currency) === preferredCurrency) {
+    if (preferredStablecoin) {
+      if (
+        normalize(service.pricing.currency) ===
+        preferredStablecoin.address.toLowerCase()
+      ) {
         score += 10;
-        reasons.push("Matches the user's preferred currency.");
+        reasons.push("Matches the user's preferred stablecoin natively (no conversion needed).");
       } else {
-        reasons.push("Does not match the user's preferred currency.");
+        reasons.push(
+          "Priced in a different stablecoin than preferred; settlement will convert at authorization.",
+        );
       }
     }
 

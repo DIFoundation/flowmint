@@ -3,7 +3,7 @@
 import { useAccount, useBalance } from "wagmi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const cUSD_ADDRESS = "0x765de816845861e75a25fca122bb6898b8b1282a";
+const USDM_ADDRESS = "0x765de816845861e75a25fca122bb6898b8b1282a"; // formerly cUSD; Celo stablecoins rebranded to Mento (USDm)
 const USDC_ADDRESS = "0xcebA9300f2b948710d2653dD7B07f33A8B32118C";
 const USDT_ADDRESS = "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e";
 
@@ -39,7 +39,7 @@ export function UserBalance() {
       <CardContent className="space-y-4">
         <div className="space-y-2 pt-2 border-t">
           <BalanceDisplay address={address} symbol="CELO" token={undefined} />
-          <BalanceDisplay address={address} token={cUSD_ADDRESS} symbol="cUSD" />
+          <BalanceDisplay address={address} token={USDM_ADDRESS} symbol="USDm" />
           <BalanceDisplay address={address} token={USDC_ADDRESS} symbol="USDC" />
           <BalanceDisplay address={address} token={USDT_ADDRESS} symbol="USDT" />
         </div>

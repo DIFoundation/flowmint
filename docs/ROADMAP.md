@@ -103,17 +103,17 @@ A reviewer can understand:
 
 ## M5 — MiniPay Distribution
 **Tasks**
-- [ ] MiniPay detection
-- [ ] Injected wallet flow
-- [ ] Mobile UI
-- [ ] Stablecoin UX
-- [ ] Evaluate phone-number lookup
-- [ ] Evaluate fee abstraction
-- [ ] HTTPS deployment
-- [ ] MiniPay test
-- [ ] Mobile browser test
+- [x] MiniPay detection
+- [x] Injected wallet flow
+- [x] Mobile UI — real intent → quote → preview → authorize → pay → settle flow, wired to `@flowmint/agent` for the first time (`DECISIONS.md` 026)
+- [x] Stablecoin UX — pick USDC/USDT/USDm at authorization, equivalent amounts shown before paying
+- [x] Evaluate phone-number lookup — not pursued, MiniPay already resolves phone numbers to wallets (`DECISIONS.md` 025)
+- [x] Evaluate fee abstraction — not pursued (`DECISIONS.md` 022, still holds)
+- [x] HTTPS deployment — local + ngrok working now; Vercel target documented with its real persistence blocker, not silently deferred (`docs/DEPLOY.md`)
+- [ ] MiniPay test — needs an actual phone; can't be done from this environment
+- [ ] Mobile browser test — same
 
-**Exit:** a first-time mobile user can complete the core workflow without developer knowledge.
+**Exit:** a first-time mobile user can complete the core workflow without developer knowledge. **Mechanically verified** via direct HTTP requests through the full route sequence (create → authorize → settle, including graceful failure handling); **not yet verified on an actual device** — that's the two remaining unchecked tasks above.
 
 ## M6 — Real-World Loop
 **Tasks**

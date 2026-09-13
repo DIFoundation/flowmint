@@ -3,6 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "description": "FlowMint economic agent",
+  "main": "./src/public-api.ts",
+  "types": "./src/public-api.ts",
+  "exports": {
+    ".": {
+      "types": "./src/public-api.ts",
+      "default": "./src/public-api.ts"
+    }
+  },
   "scripts": {
     "dev": "tsx src/index.ts",
     "build": "tsc",

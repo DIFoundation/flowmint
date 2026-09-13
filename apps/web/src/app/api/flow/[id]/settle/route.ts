@@ -1,3 +1,4 @@
+import type { PublicClient } from "viem";
 import { getAgent, getFlow, saveFlow } from "@/lib/agent-server";
 import { jsonResponse } from "@/lib/json-bigint";
 import { createServerCeloPublicClient } from "@/lib/celo-public-client";
@@ -46,7 +47,7 @@ export async function POST(
   const publicClient = createServerCeloPublicClient();
 
   try {
-    const settlement = await executor.verify(
+    const verification = await executor.verify(
       body.txHash as `0x${string}`,
       {
         token: stablecoin,
@@ -54,10 +55,20 @@ export async function POST(
         amount: flow.payment.amount,
       },
       flow.payment.payer,
-      publicClient,
+      // Cast: viem's heavily-generic client types can structurally
+      // diverge across separate workspace module-resolution contexts
+      // even when the exact same viem version is pinned everywhere
+      // (confirmed via `pnpm why viem` — single resolved version, not
+      // a real duplicate-package bug). Safe here since verify() only
+      // calls documented, version-stable PublicClient methods.
+      publicClient as unknown as PublicClient,
     );
 
-    const completed = agent.complete(flow, settlement);
+    const completed = agent.complete(flow, {
+      txHash: body.txHash as `0x${string}`,
+      confirmed: verification.confirmed,
+      blockNumber: verification.blockNumber,
+    });
 
     saveFlow(completed);
 

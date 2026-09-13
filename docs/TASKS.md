@@ -104,16 +104,23 @@ M3 evidence: apps/agent/src/wallet-ownership-tests.ts   (10/10)
 - [x] M4 exit criteria. (`execute-flow-tests.ts` — authorize → submit → broadcast → verify → complete → fulfill, one tested path; see `DECISIONS.md` 024)
 
 ## M5
-- [ ] MiniPay detection.
-- [ ] Injected wallet.
-- [ ] Mobile UI.
-- [ ] Stablecoin UX.
-- [ ] Phone-number lookup evaluation.
-- [ ] Fee abstraction evaluation.
-- [ ] HTTPS.
-- [ ] MiniPay test.
-- [ ] Mobile browser test.
-- [ ] M5 exit criteria.
+- [x] MiniPay detection. (already existed — `wallet-provider.tsx`)
+- [x] Injected wallet. (already existed — `connect-button.tsx`)
+- [x] Mobile UI. (`apps/web/src/app/page.tsx`, `lib/use-flow-mint.ts`, wired to `@flowmint/agent` via new `public-api.ts`; see `DECISIONS.md` 026)
+- [x] Stablecoin UX. (currency picker + equivalent-amounts preview, backed by M4's `resolveStablecoin`/`convertStablecoinAmount`)
+- [x] Phone-number lookup evaluation. (parked — MiniPay covers it, `DECISIONS.md` 025)
+- [x] Fee abstraction evaluation. (parked, `DECISIONS.md` 022)
+- [x] HTTPS. (local + ngrok documented and working, `docs/DEPLOY.md`; Vercel path documented with its real blocker, not glossed over)
+- [ ] MiniPay test. (needs a physical device — outside what this environment can do)
+- [ ] Mobile browser test. (same)
+- [ ] M5 exit criteria. (blocked only on the two device tests above — everything else is done and verified)
+
+```
+M5 evidence: full route sequence (create -> authorize -> settle) exercised via
+             direct HTTP requests against a running dev server, including the
+             graceful-failure path (RPC unreachable -> flow fails cleanly, no crash)
+             apps/agent test suite: pnpm --filter @flowmint/agent test (unaffected)
+```
 
 ## M6
 - [ ] Independent users.

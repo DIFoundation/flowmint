@@ -17,8 +17,28 @@ import { FLOWMINT_STABLECOIN_ADDRESSES, CELO_STABLECOINS } from "@flowmint/celo"
  * already flags for the audit trail — a Flow's evidence and state need a
  * real datastore before this runs on Vercel for real. Tracked here so it
  * isn't quietly forgotten when deployment target changes.
+ *
+ * The globalThis anchor below is NOT about that Vercel gap — it's a
+ * separate, more immediate fix: Next.js's dev-mode compiler can
+ * re-instantiate route modules independently (confirmed by testing —
+ * a flow created via POST /api/flow was not visible to a different
+ * route file's plain module-level Map moments later, in the SAME dev
+ * server process). Anchoring to globalThis survives that.
  */
-const flows = new Map<string, Flow>();
+declare global {
+  // eslint-disable-next-line no-var
+  var __flowmintAgent: FlowMintAgent | undefined;
+  // eslint-disable-next-line no-var
+  var __flowmintFlows: Map<string, Flow> | undefined;
+}
+
+function getFlowStore(): Map<string, Flow> {
+  if (!globalThis.__flowmintFlows) {
+    globalThis.__flowmintFlows = new Map<string, Flow>();
+  }
+
+  return globalThis.__flowmintFlows;
+}
 
 function buildRegistry(): ServiceRegistry {
   const registry = new ServiceRegistry();
@@ -32,7 +52,7 @@ function buildRegistry(): ServiceRegistry {
     status: "available",
     pricing: {
       currency: CELO_STABLECOINS.USDC.address,
-      amount: 2_000n, // 0.002 USDC
+      amount: 2_000_000n, // 2 USDC
     },
     active: true,
   };
@@ -45,8 +65,8 @@ function buildRegistry(): ServiceRegistry {
 let agentInstance: FlowMintAgent | undefined;
 
 export function getAgent(): FlowMintAgent {
-  if (!agentInstance) {
-    agentInstance = new FlowMintAgent({
+  if (!globalThis.__flowmintAgent) {
+    globalThis.__flowmintAgent = new FlowMintAgent({
       registry: buildRegistry(),
       paymentPolicy: {
         maxPayment: 10_000_000n,
@@ -56,13 +76,13 @@ export function getAgent(): FlowMintAgent {
     });
   }
 
-  return agentInstance;
+  return globalThis.__flowmintAgent;
 }
 
 export function saveFlow(flow: Flow): void {
-  flows.set(flow.id, flow);
+  getFlowStore().set(flow.id, flow);
 }
 
 export function getFlow(id: string): Flow | undefined {
-  return flows.get(id);
+  return getFlowStore().get(id);
 }

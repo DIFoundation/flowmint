@@ -29,8 +29,7 @@ export type AgentExecutionStage =
   | "payment_pending"
   | "settling"
   | "completed"
-  | "failed"
-  | "rejected";
+  | "failed";
 
 export interface FlowIntent {
   description: string;

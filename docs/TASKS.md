@@ -125,13 +125,26 @@ M5 evidence: full route sequence (create -> authorize -> settle) exercised via
 ## M6
 - [ ] Independent users.
 - [ ] Genuine transactions.
-- [ ] Friction collection.
+- [ ] Friction collection. (instrumentation ready — `metrics-store.ts`, `DECISIONS.md` 028)
 - [ ] Fix highest-impact issues.
-- [ ] Distinct users.
-- [ ] Returning users.
-- [ ] Distinct signers/authorisers.
+- [ ] Distinct users. (instrumentation ready, awaiting real usage)
+- [ ] Returning users. (instrumentation ready; blocked on real persistence to mean anything on Vercel — see below)
+- [ ] Distinct signers/authorisers. (instrumentation ready)
 - [ ] User outcomes.
 - [ ] M6 exit criteria.
+
+```
+M6 status: measurement infrastructure built and tested (4 API routes instrumented,
+           GET /api/metrics + /metrics dashboard, access-key gated).
+           Verified via real HTTP requests: create -> authorize -> settle-failure
+           correctly produced distinctUsers=1, distinctSigners=1, flowsFailed=1,
+           flowsAbandoned=1 matching exactly what happened.
+           BLOCKER: in-memory store (same as agent-server.ts) won't survive
+           Vercel serverless cold starts. Needs a real datastore decision
+           before real users' data can be trusted past a single deploy.
+           No real users yet — this milestone's actual exit criterion requires
+           real people, which is on the user to go find, not something buildable.
+```
 
 ## M7
 - [ ] Agent↔human flow.

@@ -25,20 +25,26 @@ all in-flight flows.
 
 ## Vercel (target production host)
 
-Not yet deployed. Before pointing this at Vercel for real, two things
-from `docs/TRUST.md` §7 and this milestone's work need to be resolved
-first, not discovered after shipping:
+Not yet deployed. Before pointing this at Vercel for real, this needs to
+be resolved first, not discovered after shipping — and it's no longer
+just a theoretical concern, it's the specific thing blocking M6's exit
+criterion in production:
 
-1. **Flow persistence.** Vercel serverless functions are not a single
-   long-lived process — the `globalThis` in-memory store this milestone
-   ships works for local dev but will not reliably survive across
-   separate serverless invocations or multiple concurrent instances in
-   production. A real datastore (even something simple — Vercel KV,
-   Postgres, etc.) is required before this is production-safe on
-   Vercel, not just "probably fine."
+1. **Flow + metrics persistence.** Vercel serverless functions are not a
+   single long-lived process — the `globalThis` in-memory stores this
+   and the M5 milestone ship (`agent-server.ts`, `metrics-store.ts`) work
+   for local dev but will not reliably survive across separate
+   serverless invocations or multiple concurrent instances in
+   production. Concretely: M6's "measure returning users" is impossible
+   to trust on Vercel until this is real. A real datastore (even
+   something simple — Vercel KV, Postgres, etc.) is required before
+   real user data means anything past a single deploy.
 2. **RPC access.** Set `CELO_RPC_URL` as a Vercel environment variable
    if not using the default `https://forno.celo.org` (e.g. a
    rate-limit-safe provider for real traffic).
+3. **`METRICS_ACCESS_KEY`.** Set this in production — without it,
+   `/api/metrics` is wide open and leaks every wallet address that's
+   used the app.
 
 Until persistence is addressed, treat any Vercel deployment as a demo
 environment, not a production one — the same honesty standard applied

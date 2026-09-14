@@ -15,6 +15,7 @@ import { ConnectButton as WalletConnectButton } from "@/components/connect-butto
 
 const navLinks = [
   { name: "Home", href: "/" },
+  { name: "Metrics", href: "/metrics"},
   { name: "Docs", href: "https://docs.celo.org", external: true },
 ]
 

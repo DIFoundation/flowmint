@@ -1,5 +1,6 @@
 import { getAgent, getFlow, saveFlow } from "@/lib/agent-server";
 import { jsonResponse } from "@/lib/json-bigint";
+import { recordEvent } from "@/lib/metrics-store";
 
 /**
  * NOTE: there is no real reviewer authentication here — this lets
@@ -35,6 +36,15 @@ export async function POST(
   });
 
   saveFlow(resolved);
+
+  if (resolved.status === "failed") {
+    recordEvent({
+      type: "flow_failed",
+      flowId: resolved.id,
+      stage: "escalation",
+      reason: resolved.outcome?.error,
+    });
+  }
 
   return jsonResponse({
     flowId: resolved.id,

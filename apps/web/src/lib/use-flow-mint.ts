@@ -58,6 +58,7 @@ export function useFlowMint() {
         body: JSON.stringify({
           description,
           maxBudget: String(Math.round(maxBudgetUsd * 1_000_000)),
+          address,
         }),
       });
 
@@ -81,7 +82,7 @@ export function useFlowMint() {
         setStage("failed");
       }
     },
-    [],
+    [address],
   );
 
   const approveEscalation = useCallback(async () => {

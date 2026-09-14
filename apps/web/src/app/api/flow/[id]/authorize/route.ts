@@ -1,5 +1,6 @@
 import { getAgent, getFlow, saveFlow } from "@/lib/agent-server";
 import { jsonResponse } from "@/lib/json-bigint";
+import { recordEvent } from "@/lib/metrics-store";
 import { resolveStablecoin, convertStablecoinAmount } from "@flowmint/celo";
 
 interface AuthorizeBody {
@@ -81,6 +82,20 @@ export async function POST(
       : authorized;
 
   saveFlow(result);
+
+  const address = body.payer as `0x${string}`;
+
+  if (result.status === "settling") {
+    recordEvent({ type: "flow_authorized", flowId: result.id, address });
+  } else {
+    recordEvent({
+      type: "flow_failed",
+      flowId: result.id,
+      address,
+      stage: "authorize",
+      reason: result.outcome?.error,
+    });
+  }
 
   return jsonResponse({
     flowId: result.id,

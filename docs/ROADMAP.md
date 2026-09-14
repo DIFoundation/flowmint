@@ -119,14 +119,14 @@ A reviewer can understand:
 **Tasks**
 - [ ] First independent users
 - [ ] Genuine transactions
-- [ ] Observe friction
-- [ ] Fix highest-impact issues
-- [ ] Measure distinct users
-- [ ] Measure returning users
-- [ ] Measure signers/authorizers
-- [ ] Document real outcomes
+- [ ] Observe friction — **instrumentation ready**: `flowsFailed`/`failuresByStage`/`flowsAbandoned` in `/api/metrics`, populated automatically as real flows run
+- [ ] Fix highest-impact issues — depends on real friction data existing first
+- [ ] Measure distinct users — **instrumentation ready**, `distinctUsers` in `/api/metrics`; reads 0 until real people use it
+- [ ] Measure returning users — **instrumentation ready**, `returningUsers`; needs the persistence gap below resolved to mean anything past a single deploy
+- [ ] Measure signers/authorizers — **instrumentation ready**, `distinctSigners`
+- [ ] Document real outcomes — can't be written until the above produce real numbers
 
-**Exit:** evidence of genuine use by people other than the builder, with repeat use where feasible.
+**Exit:** evidence of genuine use by people other than the builder, with repeat use where feasible. **Not met, and can't be by me** — this requires real independent people actually using the deployed app. See `DECISIONS.md` 028 for what's built to capture that evidence once it happens, and its own real blocker: the metrics store is in-memory only, so "returning users" can't be trusted in production until a real datastore replaces it — this is no longer a deferred nice-to-have, it's the actual precondition for this milestone's exit criterion meaning anything on Vercel.
 
 ## M7 — Autonomous Network
 **Tasks**

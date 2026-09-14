@@ -1,6 +1,7 @@
 import type { PublicClient } from "viem";
 import { getAgent, getFlow, saveFlow } from "@/lib/agent-server";
 import { jsonResponse } from "@/lib/json-bigint";
+import { recordEvent } from "@/lib/metrics-store";
 import { createServerCeloPublicClient } from "@/lib/celo-public-client";
 import { resolveStablecoin, MainnetCeloPaymentExecutor } from "@flowmint/celo";
 
@@ -72,6 +73,22 @@ export async function POST(
 
     saveFlow(completed);
 
+    if (completed.status === "completed") {
+      recordEvent({
+        type: "flow_completed",
+        flowId: completed.id,
+        address: flow.payment.payer,
+      });
+    } else {
+      recordEvent({
+        type: "flow_failed",
+        flowId: completed.id,
+        address: flow.payment.payer,
+        stage: "settle",
+        reason: completed.outcome?.error,
+      });
+    }
+
     return jsonResponse({
       flowId: completed.id,
       status: completed.status,
@@ -85,6 +102,14 @@ export async function POST(
     const failed = agent.failExecution(flow, message);
 
     saveFlow(failed);
+
+    recordEvent({
+      type: "flow_failed",
+      flowId: failed.id,
+      address: flow.payment.payer,
+      stage: "settle",
+      reason: message,
+    });
 
     return jsonResponse(
       { flowId: failed.id, status: failed.status, error: message },

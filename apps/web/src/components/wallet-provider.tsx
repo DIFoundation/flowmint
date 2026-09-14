@@ -2,19 +2,17 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { WagmiProvider, createConfig, http, useConnect } from "wagmi";
+import { WagmiProvider, createConfig, http, useConnect, useAccount, useSwitchChain } from "wagmi";
 import { injected } from "wagmi/connectors";
-import { celo, celoSepolia } from "wagmi/chains";
-import { ConnectButton } from "./connect-button";
+import { celo } from "wagmi/chains";
 
 const wagmiConfig = createConfig({
-  chains: [celo, celoSepolia],
+  chains: [celo],
   connectors: [
     injected(),
   ],
   transports: {
     [celo.id]: http(),
-    [celoSepolia.id]: http(),
   },
   ssr: true,
 });
@@ -27,6 +25,8 @@ function WalletProviderInner({
   children: React.ReactNode;
 }) {
   const { connect, connectors } = useConnect();
+  const { chainId } = useAccount();
+  const { switchChain } = useSwitchChain();
 
   useEffect(() => {
     if (window.ethereum?.isMiniPay) {
@@ -38,7 +38,11 @@ function WalletProviderInner({
         connect({ connector: injectedConnector });
       }
     }
-  }, [connect, connectors]);
+
+    if (!window.ethereum.isMiniPay && chainId !== celo.id) {
+      switchChain({ chainId: celo.id });
+    }
+  }, [connect, connectors, chainId, switchChain]);
 
   return <>{children}</>;
 }

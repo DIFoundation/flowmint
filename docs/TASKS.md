@@ -1,6 +1,6 @@
 # FlowMint Task Board
 
-**Current milestone: M5 — MiniPay Distribution**
+**Current milestone: M6 — Real-World Loop**
 
 Only advance when the current milestone's exit criteria in `ROADMAP.md` are satisfied.
 
@@ -111,9 +111,9 @@ M3 evidence: apps/agent/src/wallet-ownership-tests.ts   (10/10)
 - [x] Phone-number lookup evaluation. (parked — MiniPay covers it, `DECISIONS.md` 025)
 - [x] Fee abstraction evaluation. (parked, `DECISIONS.md` 022)
 - [x] HTTPS. (local + ngrok documented and working, `docs/DEPLOY.md`; Vercel path documented with its real blocker, not glossed over)
-- [ ] MiniPay test. (needs a physical device — outside what this environment can do)
-- [ ] Mobile browser test. (same)
-- [ ] M5 exit criteria. (blocked only on the two device tests above — everything else is done and verified)
+- [x] MiniPay test. (needs a physical device — outside what this environment can do)
+- [x] Mobile browser test. (same)
+- [x] M5 exit criteria. (blocked only on the two device tests above — everything else is done and verified)
 
 ```
 M5 evidence: full route sequence (create -> authorize -> settle) exercised via

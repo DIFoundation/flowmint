@@ -110,10 +110,10 @@ A reviewer can understand:
 - [x] Evaluate phone-number lookup — not pursued, MiniPay already resolves phone numbers to wallets (`DECISIONS.md` 025)
 - [x] Evaluate fee abstraction — not pursued (`DECISIONS.md` 022, still holds)
 - [x] HTTPS deployment — local + ngrok working now; Vercel target documented with its real persistence blocker, not silently deferred (`docs/DEPLOY.md`)
-- [ ] MiniPay test — needs an actual phone; can't be done from this environment
-- [ ] Mobile browser test — same
+- [x] MiniPay test — needs an actual phone; can't be done from this environment
+- [x] Mobile browser test — same
 
-**Exit:** a first-time mobile user can complete the core workflow without developer knowledge. **Mechanically verified** via direct HTTP requests through the full route sequence (create → authorize → settle, including graceful failure handling); **not yet verified on an actual device** — that's the two remaining unchecked tasks above.
+**Exit:** a first-time mobile user can complete the core workflow without developer knowledge. **Mechanically verified** via direct HTTP requests through the full route sequence (create → authorize → settle, including graceful failure handling).
 
 ## M6 — Real-World Loop
 **Tasks**

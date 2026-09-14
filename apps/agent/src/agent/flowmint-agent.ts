@@ -50,6 +50,11 @@ export class FlowMintAgent {
       config.escalationPolicy ?? DEFAULT_ESCALATION_POLICY;
   }
 
+  /** Register a trusted, validated service discovered by an adapter. */
+  registerService(service: Service): void {
+    this.registry.register(service);
+  }
+
   createFlow(intent: FlowIntent): Flow {
     const now = Date.now();
 

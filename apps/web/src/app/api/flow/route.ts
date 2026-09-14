@@ -2,6 +2,7 @@ import { getAgent, saveFlow } from "@/lib/agent-server";
 import { jsonResponse } from "@/lib/json-bigint";
 import { recordEvent } from "@/lib/metrics-store";
 import { buildPaymentPreview } from "@flowmint/agent";
+import { getProviderDiscovery } from "@/lib/provider-discovery";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -21,6 +22,39 @@ export async function POST(request: Request) {
       : undefined;
 
   const agent = getAgent();
+
+  // Discover providers before evaluating the intent. Discovery is server-side;
+  // the browser never calls arbitrary provider URLs or receives API secrets.
+  if (typeof (body as { description?: unknown })?.description === "string") {
+    const description = (body as { description: string }).description.trim();
+    const maxBudgetRaw = (body as { maxBudget?: unknown }).maxBudget;
+    const intent = {
+      description,
+      ...(typeof maxBudgetRaw === "string" && /^\d+$/.test(maxBudgetRaw)
+        ? { maxBudget: BigInt(maxBudgetRaw) }
+        : {}),
+    };
+
+    const discovered = await getProviderDiscovery().discover(intent);
+    for (const provider of discovered) {
+      if (provider.verificationStatus !== "unverified") {
+        agent.registerService({
+          id: provider.id,
+          name: provider.name,
+          description: `${provider.description} (${provider.websiteUrl})`,
+          provider: provider.walletAddress ?? provider.provider,
+          capabilities: provider.capabilities,
+          status: "available",
+          pricing: {
+            currency: provider.currency,
+            amount: BigInt(provider.amount),
+          },
+          active: true,
+        });
+      }
+    }
+  }
+
   const result = agent.startFromUnknown(body);
 
   if (result.stage === "rejected") {

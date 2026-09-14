@@ -33,3 +33,11 @@ export { validateFlowIntent } from "./agent/validate-intent";
 
 export { CeloPayment, type AgentPaymentClients } from "./payments/celo-payment";
 export { executeFlow, type ExecuteFlowResult } from "./payments/execute-flow";
+export {
+  ProviderDiscovery,
+  HttpProviderDiscoveryAdapter,
+  type DiscoveredProvider,
+  type ProviderDiscoveryAdapter,
+  type HttpDiscoveryAdapterConfig,
+  type ProviderDiscoverySource,
+} from "./discovery/provider-discovery";

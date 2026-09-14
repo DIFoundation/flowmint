@@ -94,3 +94,13 @@ Unit → component → wallet/account lifecycle → agent decisions → contract
 
 ## Architecture rule
 If architecture becomes more complicated than the economic workflow requires, simplify it.
+## Provider discovery
+
+FlowMint supports pluggable provider discovery through `ProviderDiscoveryAdapter`.
+Adapters can query a curated catalog, a marketplace API, or a server-side web-search
+service. Discovery results are normalized into `DiscoveredProvider` records and
+registered as FlowMint `Service` records before the existing decision engine ranks them.
+
+Discovery is deliberately server-side. Search results are untrusted until verified;
+unverified providers are not activated for payment execution. The existing budget,
+recipient-verification, authorization, and settlement checks remain mandatory.

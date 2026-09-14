@@ -25,24 +25,28 @@ function WalletProviderInner({
   children: React.ReactNode;
 }) {
   const { connect, connectors } = useConnect();
-  const { chainId } = useAccount();
+  const { isConnected, chainId } = useAccount();
   const { switchChain } = useSwitchChain();
 
   useEffect(() => {
+    if (typeof window === "undefined" || !window.ethereum) return;
+
     if (window.ethereum?.isMiniPay) {
       const injectedConnector = connectors.find(
         (connector) => connector.id === "injected",
       );
 
-      if (injectedConnector) {
+      if (injectedConnector && !isConnected) {
         connect({ connector: injectedConnector });
       }
+
+      return
     }
 
-    if (!window.ethereum.isMiniPay && chainId !== celo.id) {
+    if (isConnected && chainId !== celo.id) {
       switchChain({ chainId: celo.id });
     }
-  }, [connect, connectors, chainId, switchChain]);
+  }, [connect, connectors, chainId, isConnected, switchChain]);
 
   return <>{children}</>;
 }
